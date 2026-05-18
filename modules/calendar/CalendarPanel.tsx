@@ -163,9 +163,9 @@ export function CalendarPanel() {
   const [lastUpdate,setLastUpdate]   = useState('')
   const [refreshing,setRefreshing]   = useState(false)
   const [impactFilter,setImpactFilter] = useState<'all'|ImpactLevel>('all')
-  const [currencyFilter,setCurrencyFilter] = useState('ALL')
-  const [newsImpact,setNewsImpact]   = useState<'all'|ImpactLevel>('all')
-  const [newsCurrency,setNewsCurrency] = useState('ALL')
+  const [currencies,setCurrencies]     = useState<Set<string>>(new Set(['ALL']))
+  const [newsImpact,setNewsImpact]     = useState<'all'|ImpactLevel>('all')
+  const [newsCurrencies,setNewsCurrencies] = useState<Set<string>>(new Set(['ALL']))
   const intervalRef = useRef<ReturnType<typeof setInterval>|null>(null)
 
   const fetchAll = useCallback(async()=>{
@@ -184,8 +184,35 @@ export function CalendarPanel() {
 
   useEffect(()=>{ fetchAll(); intervalRef.current=setInterval(fetchAll,30000); return()=>{if(intervalRef.current)clearInterval(intervalRef.current)} },[fetchAll])
 
-  const filteredEvents = events.filter(e=>(impactFilter==='all'||e.impactLevel===impactFilter)&&(currencyFilter==='ALL'||e.country===currencyFilter))
-  const filteredNews   = news.filter(n=>(newsImpact==='all'||n.impact===newsImpact)&&(newsCurrency==='ALL'||n.currency===newsCurrency))
+  const toggleCurrency = (c: string) => {
+    setCurrencies(prev => {
+      const next = new Set(prev)
+      if (c === 'ALL') return new Set(['ALL'])
+      next.delete('ALL')
+      if (next.has(c)) { next.delete(c); if (next.size === 0) return new Set(['ALL']) }
+      else next.add(c)
+      return next
+    })
+  }
+  const toggleNewsCurrency = (c: string) => {
+    setNewsCurrencies(prev => {
+      const next = new Set(prev)
+      if (c === 'ALL') return new Set(['ALL'])
+      next.delete('ALL')
+      if (next.has(c)) { next.delete(c); if (next.size === 0) return new Set(['ALL']) }
+      else next.add(c)
+      return next
+    })
+  }
+
+  const filteredEvents = events.filter(e =>
+    (impactFilter==='all'||e.impactLevel===impactFilter) &&
+    (currencies.has('ALL')||currencies.has(e.country))
+  )
+  const filteredNews = news.filter(n =>
+    (newsImpact==='all'||n.impact===newsImpact) &&
+    (newsCurrencies.has('ALL')||newsCurrencies.has(n.currency))
+  )
   const grouped        = groupByDay(filteredEvents)
   const highCount      = events.filter(e=>e.impactLevel==='high').length
   const CURRENCIES     = ['ALL','USD','EUR','GBP','JPY','CAD','AUD','NZD','CHF']
@@ -211,10 +238,15 @@ export function CalendarPanel() {
       {/* ══ HEADER PREMIUM ══ */}
       <div style={{flexShrink:0,background:'linear-gradient(180deg,rgba(13,18,28,.95) 0%,rgba(6,8,13,.95) 100%)',borderBottom:'1px solid rgba(255,255,255,.06)',padding:'32px 48px 0'}}>
         
-        {/* Top row: clock + refresh */}
+        {/* Top row: clock LEFT + refresh RIGHT */}
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:24}}>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <div style={{width:3,height:28,background:'linear-gradient(180deg,#f0b429,#d4780a)',borderRadius:2}}/>
+          <div style={{display:'flex',alignItems:'center',gap:14}}>
+            {/* Heure en haut à gauche */}
+            <div style={{display:'flex',alignItems:'center',gap:8,padding:'6px 14px',borderRadius:6,background:'rgba(240,180,41,.06)',border:'1px solid rgba(240,180,41,.15)'}}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#f0b429" strokeWidth="1.2"/><path d="M6 3v3l2 1.5" stroke="#f0b429" strokeWidth="1.2" strokeLinecap="round"/></svg>
+              <LiveClock/>
+            </div>
+            <div style={{width:1,height:28,background:'rgba(255,255,255,.06)'}}/>
             <div>
               <div style={{fontSize:11,fontWeight:600,letterSpacing:'2px',color:'#3d5060',textTransform:'uppercase' as const}}>Institutional Trading Desk</div>
               <h1 style={{fontSize:30,fontWeight:800,letterSpacing:'-0.8px',color:'#f0f4f8',margin:0,lineHeight:1.1}}>
@@ -223,8 +255,6 @@ export function CalendarPanel() {
             </div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:12}}>
-            <LiveClock/>
-            <div style={{width:1,height:20,background:'rgba(255,255,255,.07)'}}/>
             {refreshing
               ? <span style={{fontSize:10,color:'#f0b429',fontWeight:600,letterSpacing:'.5px',animation:'t-pulse 1s infinite'}}>● LIVE</span>
               : <span style={{fontSize:10,color:'#2d3f50',letterSpacing:'.5px'}}>{lastUpdate&&`Mis à jour ${lastUpdate}`}</span>
@@ -277,7 +307,16 @@ export function CalendarPanel() {
           })}
           <div style={{width:1,height:20,background:'rgba(255,255,255,.07)',margin:'0 8px'}}/>
           <span style={{fontSize:9,fontWeight:700,letterSpacing:'1.5px',color:'#2d3f50',marginRight:4,textTransform:'uppercase' as const}}>DEVISE</span>
-          {CURRENCIES.map(c=><button key={c} onClick={()=>setCurrencyFilter(c)} style={pill(currencyFilter===c)}>{c}</button>)}
+          {CURRENCIES.map(c=>{
+            const active = currencies.has(c)
+            return <button key={c} onClick={()=>toggleCurrency(c)} style={{
+              padding:'5px 14px', borderRadius:20, fontSize:11, fontWeight:600, cursor:'pointer',
+              border:`1px solid ${active?'rgba(240,180,41,.55)':'rgba(255,255,255,.07)'}`,
+              background:active?'rgba(240,180,41,.12)':'transparent',
+              color:active?'#f0b429':'#3d5060', transition:'all 150ms', fontFamily:'inherit',
+              boxShadow:active?'0 0 8px rgba(240,180,41,.15)':'none',
+            }}>{c}</button>
+          })}
           <div style={{flex:1}}/>
           <span style={{fontSize:10,color:'#2d3f50'}}>{filteredEvents.length} événements</span>
         </div>
@@ -348,14 +387,14 @@ export function CalendarPanel() {
                       <span style={{fontSize:14,lineHeight:1}}>{ev.flag}</span>
 
                       {/* Country */}
-                      <span style={{fontSize:10,fontWeight:700,color:'#4a5e72',letterSpacing:'.5px'}}>{ev.country}</span>
+                      <span style={{fontSize:11,fontWeight:800,color:'#ffffff',letterSpacing:'.5px'}}>{ev.country}</span>
 
                       {/* Title */}
                       <span style={{
-                        fontSize:isHigh?13:12, fontWeight:isHigh?600:400,
-                        color:isHigh?'#f0f4f8':ev.impactLevel==='med'?'#b8cad9':'#4a5e72',
+                        fontSize:13, fontWeight:700,
+                        color:'#ffffff',
                         lineHeight:1.4, paddingRight:16,
-                        letterSpacing:isHigh?'-0.2px':'0',
+                        letterSpacing:'-0.2px',
                       }}>
                         {ev.title}
                       </span>
@@ -413,7 +452,16 @@ export function CalendarPanel() {
           ))}
           <div style={{width:1,height:20,background:'rgba(255,255,255,.07)',margin:'0 8px'}}/>
           <span style={{fontSize:9,fontWeight:700,letterSpacing:'1.5px',color:'#2d3f50',marginRight:4,textTransform:'uppercase' as const}}>DEVISE</span>
-          {CURRENCIES.map(c=><button key={c} onClick={()=>setNewsCurrency(c)} style={pill(newsCurrency===c)}>{c}</button>)}
+          {CURRENCIES.map(c=>{
+            const active = newsCurrencies.has(c)
+            return <button key={c} onClick={()=>toggleNewsCurrency(c)} style={{
+              padding:'5px 14px', borderRadius:20, fontSize:11, fontWeight:600, cursor:'pointer',
+              border:`1px solid ${active?'rgba(240,180,41,.55)':'rgba(255,255,255,.07)'}`,
+              background:active?'rgba(240,180,41,.12)':'transparent',
+              color:active?'#f0b429':'#3d5060', transition:'all 150ms', fontFamily:'inherit',
+              boxShadow:active?'0 0 8px rgba(240,180,41,.15)':'none',
+            }}>{c}</button>
+          })}
           <div style={{flex:1}}/>
           <div style={{display:'flex',alignItems:'center',gap:6}}>
             {refreshing&&<span style={{fontSize:10,color:'#ef4444',fontWeight:700,letterSpacing:'.5px',animation:'t-pulse 1s infinite'}}>● LIVE</span>}
