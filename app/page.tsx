@@ -58,11 +58,15 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero ── */}
-      <section style={{ position:'relative', padding:'100px 32px 80px', textAlign:'center', overflow:'hidden' }}>
-        <Blob style={{ width:500, height:500, background:'rgba(240,180,41,.07)', top:-100, left:'50%', transform:'translateX(-50%)' }} />
-        <Blob style={{ width:300, height:300, background:'rgba(55,138,221,.06)', top:50, left:'10%' }} />
-        <Blob style={{ width:300, height:300, background:'rgba(127,119,221,.05)', top:50, right:'10%' }} />
+      <section style={{ position:'relative', padding:'120px 32px 100px', textAlign:'center', overflow:'hidden' }}>
+        {/* Hero background image */}
+        <div style={{ position:'absolute', inset:0, backgroundImage:"url('/hero-bg.png')", backgroundSize:'cover', backgroundPosition:'center 30%', backgroundRepeat:'no-repeat', zIndex:0 }} />
+        {/* Dark overlay — keeps text readable */}
+        <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, rgba(8,11,16,.55) 0%, rgba(8,11,16,.3) 40%, rgba(8,11,16,.75) 75%, rgba(8,11,16,1) 100%)', zIndex:1 }} />
+        {/* Extra side vignette */}
+        <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at center, transparent 30%, rgba(8,11,16,.5) 100%)', zIndex:1 }} />
 
+        <div style={{ position:'relative', zIndex:2 }}>
         <div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'5px 12px 5px 8px', borderRadius:100, background:'rgba(240,180,41,.1)', border:'0.5px solid rgba(240,180,41,.25)', marginBottom:24 }}>
           <span style={{ width:6, height:6, borderRadius:'50%', background:'#f0b429', animation:'t-pulse 2s ease-in-out infinite', display:'inline-block' }} />
           <span style={{ fontSize:12, color:'#f0b429', fontWeight:500 }}>Now with AI Copilot powered by Claude</span>
@@ -92,14 +96,15 @@ export default function LandingPage() {
         </div>
 
         {/* Live ticker preview */}
-        <div style={{ marginTop:60, display:'inline-flex', gap:3, padding:4, borderRadius:10, background:'rgba(255,255,255,.04)', border:'0.5px solid rgba(255,255,255,.08)' }}>
+        <div style={{ marginTop:60, display:'inline-flex', gap:3, padding:4, borderRadius:10, background:'rgba(255,255,255,.06)', border:'0.5px solid rgba(255,255,255,.12)', backdropFilter:'blur(12px)' }}>
           {prices.map(p=>(
-            <div key={p.sym} style={{ padding:'8px 16px', borderRadius:7, background:'rgba(255,255,255,.03)', display:'flex', flexDirection:'column', alignItems:'flex-start', gap:3 }}>
-              <span style={{ fontSize:10, color:'#4a5e72', fontFamily:"'IBM Plex Mono',monospace", letterSpacing:'0.3px' }}>{p.sym}</span>
+            <div key={p.sym} style={{ padding:'8px 16px', borderRadius:7, background:'rgba(255,255,255,.04)', display:'flex', flexDirection:'column', alignItems:'flex-start', gap:3 }}>
+              <span style={{ fontSize:10, color:'#8a9db5', fontFamily:"'IBM Plex Mono',monospace", letterSpacing:'0.3px' }}>{p.sym}</span>
               <span style={{ fontSize:13, fontFamily:"'IBM Plex Mono',monospace", fontVariantNumeric:'tabular-nums', fontWeight:600, color:p.up?'#22c55e':'#ef4444' }}>{p.val}</span>
             </div>
           ))}
         </div>
+        </div>{/* end z-index wrapper */}
       </section>
 
       {/* ── Features ── */}
