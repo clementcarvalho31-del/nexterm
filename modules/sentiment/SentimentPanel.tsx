@@ -375,6 +375,9 @@ function SentimentDetail({ data, onClose }: { data: SentimentData; onClose: ()=>
         <div style={{marginTop:16,fontSize:8,color:'#1e2a35',textAlign:'center' as const,letterSpacing:'.8px'}}>SOURCE: MYFXBOOK COMMUNITY OUTLOOK • DONNÉES EN TEMPS RÉEL</div>
       </div>
     </div>
+  )
+}
+
 // ── Sentiment detail modal ────────────────────────────────────────────────────
 function SentimentDetail({ data, onClose }: { data: SentimentData; onClose: ()=>void }) {
   const isBull = data.bias==='bullish'; const isBear = data.bias==='bearish'
