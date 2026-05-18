@@ -58,11 +58,6 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
           </div>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <button style={{ padding:'7px 16px', borderRadius:7, fontSize:12, fontWeight:500, color:'#8a9db5', background:'transparent', border:'0.5px solid rgba(255,255,255,.1)', cursor:'pointer', transition:'all 150ms', fontFamily:'inherit' }}
-            onMouseEnter={e=>{ e.currentTarget.style.color='#c8d6e5'; e.currentTarget.style.borderColor='rgba(255,255,255,.2)' }}
-            onMouseLeave={e=>{ e.currentTarget.style.color='#8a9db5'; e.currentTarget.style.borderColor='rgba(255,255,255,.1)' }}>
-            {L.connect}
-          </button>
           <AccountMenu lang={lang} onLangChange={onLangChange} />
         </div>
       </header>
