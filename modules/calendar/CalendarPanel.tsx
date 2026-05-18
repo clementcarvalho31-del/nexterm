@@ -27,15 +27,13 @@ function forecastRange(forecast: string) {
   const unit = forecast.replace(/[\d.-]/g,'').trim()
   const d = Math.abs(val)>100?val*0.08:Math.abs(val)>10?val*0.12:Math.abs(val)>1?val*0.15:0.1
   const f = (n:number) => (Math.round(n*100)/100)+unit
-  return { low: f(val-d), high: f(val+d) }
+  return { low:f(val-d), high:f(val+d) }
 }
-
 function enrichEvent(e: RawFFEvent, i: number): CalEvent {
   const r = forecastRange(e.forecast)
   return { ...e, id:`ev-${i}`, flag:FLAGS[e.country]||'🌐', impactLevel:IMPACT_MAP[e.impact]||'low', forecastLow:r?.low, forecastHigh:r?.high }
 }
-
-function groupByDay(events: CalEvent[]): [string, CalEvent[]][] {
+function groupByDay(events: CalEvent[]): [string,CalEvent[]][] {
   const map = new Map<string,CalEvent[]>()
   events.forEach(e => {
     const d = new Date(e.date)
@@ -45,21 +43,18 @@ function groupByDay(events: CalEvent[]): [string, CalEvent[]][] {
   })
   return Array.from(map.entries())
 }
-
 function timeAgo(dateStr: string): string {
   const diff = Date.now()-new Date(dateStr).getTime()
   const m = Math.floor(diff/60000)
-  if (m<1) return 'maintenant'; if (m<60) return `il y a ${m}m`
-  const h = Math.floor(m/60); if (h<24) return `il y a ${h}h`
-  return `il y a ${Math.floor(h/24)}j`
+  if (m<1) return 'maintenant'; if (m<60) return `${m}m`
+  const h = Math.floor(m/60); if (h<24) return `${h}h`
+  return `${Math.floor(h/24)}j`
 }
-
 function detectCurrency(title: string, tags: string[]): string {
   const all = [title,...tags].join(' ').toUpperCase()
   for (const c of ['USD','EUR','GBP','JPY','CAD','AUD','NZD','CHF','CNY']) if (all.includes(c)) return c
   return 'ALL'
 }
-
 function detectImpact(title: string): ImpactLevel {
   const t = title.toLowerCase()
   if (['fed','fomc','cpi','nfp','payroll','gdp','ecb','boe','boj','inflation','rate decision','recession','crisis'].some(w=>t.includes(w))) return 'high'
@@ -82,218 +77,308 @@ const FF_FALLBACK: RawFFEvent[] = [
   {title:'BOJ Policy Rate',country:'JPY',date:new Date(Date.now()+259200000).toISOString(),time:'11:00pm',impact:'High Impact Expected',forecast:'0.5%',previous:'0.5%',actual:''},
   {title:'Canada Employment Change',country:'CAD',date:new Date(Date.now()+259200000).toISOString(),time:'08:30am',impact:'High Impact Expected',forecast:'20K',previous:'32K',actual:''},
   {title:'ISM Manufacturing PMI',country:'USD',date:new Date(Date.now()+345600000).toISOString(),time:'10:00am',impact:'Medium Impact Expected',forecast:'50.8',previous:'50.3',actual:''},
-  {title:'Michigan Consumer Sentiment',country:'USD',date:new Date(Date.now()+345600000).toISOString(),time:'10:00am',impact:'Medium Impact Expected',forecast:'59.0',previous:'57.0',actual:''},
 ]
 
 const NEWS_FALLBACK: NewsItem[] = [
-  {id:'n1',title:'🚨 FED WILLIAMS: No rush to cut rates — inflation still too high, data confirms hawkish stance',date:new Date(Date.now()-300000).toISOString(),tags:['FED','USD','RATES'],impact:'high',currency:'USD',age:'5m'},
-  {id:'n2',title:'🚨 ECB LAGARDE: June cut confirmed if inflation continues declining — EUR/USD sold to 1.0840',date:new Date(Date.now()-900000).toISOString(),tags:['ECB','EUR'],impact:'high',currency:'EUR',age:'15m'},
-  {id:'n3',title:'NFP PREVIEW: Consensus 175K — whisper 185K — USD vulnerable on miss below 150K',date:new Date(Date.now()-1800000).toISOString(),tags:['NFP','USD'],impact:'high',currency:'USD',age:'30m'},
-  {id:'n4',title:'GBP/USD holds 1.2680 — UK CPI beat supports hawkish BoE pricing, rate cut delayed',date:new Date(Date.now()-3600000).toISOString(),tags:['GBP','BOE'],impact:'med',currency:'GBP',age:'1h'},
-  {id:'n5',title:'🚨 BOJ MINUTES: Heated debate on pace of normalisation — JPY bid on intervention risk',date:new Date(Date.now()-5400000).toISOString(),tags:['BOJ','JPY'],impact:'high',currency:'JPY',age:'1h30'},
-  {id:'n6',title:'Gold breaks $2320 — geopolitical bid + real yields falling, CB accumulation accelerating',date:new Date(Date.now()-7200000).toISOString(),tags:['GOLD','USD'],impact:'med',currency:'USD',age:'2h'},
-  {id:'n7',title:'PBoC keeps LPR unchanged at 3.45% — no stimulus signal, CNH stable',date:new Date(Date.now()-9000000).toISOString(),tags:['PBOC','CNY'],impact:'med',currency:'CNY',age:'2h30'},
-  {id:'n8',title:'US Retail Sales +0.7% vs +0.4% expected — consumer resilience supports USD bid',date:new Date(Date.now()-10800000).toISOString(),tags:['USD','RETAIL'],impact:'med',currency:'USD',age:'3h'},
-  {id:'n9',title:'🚨 FOMC MEMBER GOOLSBEE: Two cuts still possible in 2025 if data cooperates',date:new Date(Date.now()-12600000).toISOString(),tags:['FED','USD'],impact:'high',currency:'USD',age:'3h30'},
-  {id:'n10',title:'Canada CPI 2.9% y/y — BOC cut in June now 78% priced, CAD sold across the board',date:new Date(Date.now()-14400000).toISOString(),tags:['BOC','CAD'],impact:'high',currency:'CAD',age:'4h'},
-  {id:'n11',title:'Eurozone PMI composite 52.1 vs 51.5 expected — EUR/USD bounce to 1.0860',date:new Date(Date.now()-18000000).toISOString(),tags:['EUR','PMI'],impact:'med',currency:'EUR',age:'5h'},
-  {id:'n12',title:'US 10Y yield hits 4.48% — dollar bid, EM currencies under pressure',date:new Date(Date.now()-21600000).toISOString(),tags:['USD','BONDS'],impact:'high',currency:'USD',age:'6h'},
+  {id:'n1',title:'FED WILLIAMS — No rush to cut rates. Inflation still too high, data must confirm before any policy pivot.',date:new Date(Date.now()-300000).toISOString(),tags:['FED','USD','RATES'],impact:'high',currency:'USD',age:'5m'},
+  {id:'n2',title:'ECB LAGARDE — June cut confirmed if inflation continues declining. EUR/USD sold aggressively to 1.0840.',date:new Date(Date.now()-900000).toISOString(),tags:['ECB','EUR'],impact:'high',currency:'EUR',age:'15m'},
+  {id:'n3',title:'NFP PREVIEW — Street consensus 175K, whisper number 185K. USD vulnerable on any miss below 150K.',date:new Date(Date.now()-1800000).toISOString(),tags:['NFP','USD'],impact:'high',currency:'USD',age:'30m'},
+  {id:'n4',title:'BOJ MINUTES — Heated debate on normalisation pace. Board divided, JPY bid as intervention risk rises.',date:new Date(Date.now()-3600000).toISOString(),tags:['BOJ','JPY'],impact:'high',currency:'JPY',age:'1h'},
+  {id:'n5',title:'FOMC GOOLSBEE — Two cuts still possible in 2025 if data cooperates. Market reprices July odds.',date:new Date(Date.now()-5400000).toISOString(),tags:['FED','USD'],impact:'high',currency:'USD',age:'1h30'},
+  {id:'n6',title:'GBP/USD holds 1.2680 — UK CPI beat supports hawkish BoE pricing, rate cut delayed to Q4.',date:new Date(Date.now()-7200000).toISOString(),tags:['GBP','BOE'],impact:'med',currency:'GBP',age:'2h'},
+  {id:'n7',title:'Canada CPI 2.9% y/y — BOC cut in June now 78% priced. CAD sold across the board.',date:new Date(Date.now()-9000000).toISOString(),tags:['BOC','CAD'],impact:'high',currency:'CAD',age:'2h30'},
+  {id:'n8',title:'Gold breaks $2320 — geopolitical bid combined with falling real yields and CB accumulation.',date:new Date(Date.now()-10800000).toISOString(),tags:['GOLD','USD'],impact:'med',currency:'USD',age:'3h'},
+  {id:'n9',title:'PBoC keeps LPR unchanged at 3.45% — no stimulus signal. CNH stable, China data mixed.',date:new Date(Date.now()-12600000).toISOString(),tags:['PBOC','CNY'],impact:'med',currency:'CNY',age:'3h30'},
+  {id:'n10',title:'US Retail Sales +0.7% vs +0.4% expected — consumer resilience supports USD bid short-term.',date:new Date(Date.now()-14400000).toISOString(),tags:['USD','RETAIL'],impact:'med',currency:'USD',age:'4h'},
+  {id:'n11',title:'Eurozone PMI composite 52.1 vs 51.5 expected — EUR/USD brief bounce to 1.0860 before fading.',date:new Date(Date.now()-18000000).toISOString(),tags:['EUR','PMI'],impact:'med',currency:'EUR',age:'5h'},
+  {id:'n12',title:'US 10Y yield pushes to 4.48% — dollar broadly bid, EM currencies under significant pressure.',date:new Date(Date.now()-21600000).toISOString(),tags:['USD','BONDS'],impact:'high',currency:'USD',age:'6h'},
 ]
 
+// ── Live clock ──────────────────────────────────────────────────────────────
+function LiveClock() {
+  const [time, setTime] = useState('')
+  useEffect(() => {
+    const tick = () => setTime(new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'America/New_York'}) + ' ET')
+    tick(); const id = setInterval(tick,1000); return()=>clearInterval(id)
+  },[])
+  return <span style={{fontFamily:'IBM Plex Mono,monospace',fontSize:11,color:'#4a5e72',letterSpacing:'.5px'}}>{time}</span>
+}
+
+// ── Countdown ───────────────────────────────────────────────────────────────
+function NextEventCountdown({events}:{events:CalEvent[]}) {
+  const [display, setDisplay] = useState({time:'—',name:'',urgent:false})
+  useEffect(()=>{
+    const tick=()=>{
+      const now=Date.now()
+      const upcoming = events
+        .filter(e=>e.impactLevel==='high'&&!e.actual)
+        .map(e=>{
+          try {
+            const d=new Date(e.date)
+            const t=e.time?.toLowerCase().replace(' ','')
+            const pm=t.includes('pm'),am=t.includes('am')
+            const clean=t.replace('am','').replace('pm','')
+            const[hS,mS]=clean.split(':'); let h=parseInt(hS)||0; const m=parseInt(mS)||0
+            if(pm&&h!==12)h+=12; if(am&&h===12)h=0
+            d.setHours(h,m,0,0); return{e,ts:d.getTime()}
+          } catch{return null}
+        })
+        .filter((x):x is {e:CalEvent,ts:number}=>x!==null&&x.ts>now)
+        .sort((a,b)=>a.ts-b.ts)[0]
+      if(!upcoming){setDisplay({time:'—',name:'Aucun HIGH à venir',urgent:false});return}
+      const diff=upcoming.ts-now
+      const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000)
+      setDisplay({
+        time:h>0?`${h}h ${m.toString().padStart(2,'0')}m`:`${m}m ${s.toString().padStart(2,'0')}s`,
+        name:upcoming.e.title.slice(0,35)+(upcoming.e.title.length>35?'…':''),
+        urgent:diff<3600000
+      })
+    }
+    tick(); const id=setInterval(tick,1000); return()=>clearInterval(id)
+  },[events])
+
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:8,padding:'6px 14px',borderRadius:6,background:display.urgent?'rgba(239,68,68,.08)':'rgba(255,255,255,.03)',border:`1px solid ${display.urgent?'rgba(239,68,68,.25)':'rgba(255,255,255,.07)'}`,transition:'all 300ms'}}>
+      <span style={{width:6,height:6,borderRadius:'50%',background:display.urgent?'#ef4444':'#f0b429',display:'inline-block',animation:'t-pulse 2s ease-in-out infinite',boxShadow:display.urgent?'0 0 8px rgba(239,68,68,.6)':'0 0 6px rgba(240,180,41,.4)'}}/>
+      <span style={{fontSize:10,color:'#5a7080',fontWeight:500}}>Prochain HIGH</span>
+      <span style={{fontSize:12,fontWeight:700,color:display.urgent?'#ef4444':'#f0b429',fontFamily:'IBM Plex Mono,monospace',fontVariantNumeric:'tabular-nums'}}>{display.time}</span>
+      <span style={{fontSize:10,color:'#3d5060',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>— {display.name}</span>
+    </div>
+  )
+}
+
 export function CalendarPanel() {
-  const [tab, setTab]           = useState<Tab>('calendar')
-  const [events, setEvents]     = useState<CalEvent[]>([])
-  const [news, setNews]         = useState<NewsItem[]>([])
-  const [loading, setLoading]   = useState(true)
-  const [lastUpdate, setLastUpdate] = useState('')
-  const [refreshing, setRefreshing] = useState(false)
-  const [impactFilter, setImpactFilter] = useState<'all'|ImpactLevel>('all')
-  const [currencyFilter, setCurrencyFilter] = useState('ALL')
-  const [newsImpact, setNewsImpact] = useState<'all'|ImpactLevel>('all')
-  const [newsCurrency, setNewsCurrency] = useState('ALL')
+  const [tab,setTab]                 = useState<Tab>('calendar')
+  const [events,setEvents]           = useState<CalEvent[]>([])
+  const [news,setNews]               = useState<NewsItem[]>([])
+  const [loading,setLoading]         = useState(true)
+  const [lastUpdate,setLastUpdate]   = useState('')
+  const [refreshing,setRefreshing]   = useState(false)
+  const [impactFilter,setImpactFilter] = useState<'all'|ImpactLevel>('all')
+  const [currencyFilter,setCurrencyFilter] = useState('ALL')
+  const [newsImpact,setNewsImpact]   = useState<'all'|ImpactLevel>('all')
+  const [newsCurrency,setNewsCurrency] = useState('ALL')
   const intervalRef = useRef<ReturnType<typeof setInterval>|null>(null)
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async()=>{
     setRefreshing(true)
     try {
-      const [calRes, newsRes] = await Promise.all([
-        fetch('/api/calendar',{cache:'no-store'}),
-        fetch('/api/news',{cache:'no-store'})
-      ])
-      const calJson = await calRes.json()
-      const newsJson = await newsRes.json()
+      const[calRes,newsRes]=await Promise.all([fetch('/api/calendar',{cache:'no-store'}),fetch('/api/news',{cache:'no-store'})])
+      const calJson=await calRes.json(); const newsJson=await newsRes.json()
       setEvents((calJson.ok&&calJson.data?.length>0?calJson.data:FF_FALLBACK).map(enrichEvent))
-      if (newsJson.ok&&newsJson.data?.length>0) {
-        setNews(newsJson.data.map((n:any,i:number):NewsItem=>({
-          id:`n-${i}`, title:n.title, date:n.date, tags:n.tags||[],
-          impact:detectImpact(n.title), currency:detectCurrency(n.title,n.tags||[]), age:timeAgo(n.date)
-        })))
+      if(newsJson.ok&&newsJson.data?.length>0){
+        setNews(newsJson.data.map((n:any,i:number):NewsItem=>({id:`n-${i}`,title:n.title,date:n.date,tags:n.tags||[],impact:detectImpact(n.title),currency:detectCurrency(n.title,n.tags||[]),age:timeAgo(n.date)})))
       } else { setNews(NEWS_FALLBACK) }
       setLastUpdate(new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}))
-    } catch {
-      setEvents(FF_FALLBACK.map(enrichEvent))
-      setNews(NEWS_FALLBACK)
-    } finally { setLoading(false); setRefreshing(false) }
-  }, [])
+    } catch { setEvents(FF_FALLBACK.map(enrichEvent)); setNews(NEWS_FALLBACK) }
+    finally { setLoading(false); setRefreshing(false) }
+  },[])
 
-  useEffect(() => {
-    fetchAll()
-    intervalRef.current = setInterval(fetchAll, 30000)
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [fetchAll])
+  useEffect(()=>{ fetchAll(); intervalRef.current=setInterval(fetchAll,30000); return()=>{if(intervalRef.current)clearInterval(intervalRef.current)} },[fetchAll])
 
-  const filteredEvents = events
-    .filter(e => (impactFilter==='all'||e.impactLevel===impactFilter) && (currencyFilter==='ALL'||e.country===currencyFilter))
-    .sort((a,b) => new Date(a.date).getTime()-new Date(b.date).getTime())
+  const filteredEvents = events.filter(e=>(impactFilter==='all'||e.impactLevel===impactFilter)&&(currencyFilter==='ALL'||e.country===currencyFilter))
+  const filteredNews   = news.filter(n=>(newsImpact==='all'||n.impact===newsImpact)&&(newsCurrency==='ALL'||n.currency===newsCurrency))
+  const grouped        = groupByDay(filteredEvents)
+  const highCount      = events.filter(e=>e.impactLevel==='high').length
+  const CURRENCIES     = ['ALL','USD','EUR','GBP','JPY','CAD','AUD','NZD','CHF']
 
-  const filteredNews = news.filter(n => (newsImpact==='all'||n.impact===newsImpact) && (newsCurrency==='ALL'||n.currency===newsCurrency))
-  const grouped = groupByDay(filteredEvents)
-  const highCount = events.filter(e=>e.impactLevel==='high').length
-  const CURRENCIES = ['ALL','USD','EUR','GBP','JPY','CAD','AUD','NZD','CHF']
+  // Impact config
+  const IC = {
+    high:{ color:'#ef4444', dim:'rgba(239,68,68,.5)', bg:'rgba(239,68,68,.08)', border:'rgba(239,68,68,.2)', stars:'★★★', label:'HIGH' },
+    med: { color:'#f0b429', dim:'rgba(240,180,41,.5)', bg:'rgba(240,180,41,.06)', border:'rgba(240,180,41,.2)', stars:'★★☆', label:'MED'  },
+    low: { color:'#2d3d4d', dim:'#1e2a35',           bg:'transparent',          border:'transparent',        stars:'★☆☆', label:'LOW'  },
+  }
 
-  const IMP_COLOR: Record<ImpactLevel,string> = { high:'#ef4444', med:'#f0b429', low:'#374151' }
-  const IMP_BG:    Record<ImpactLevel,string> = { high:'rgba(239,68,68,.1)', med:'rgba(240,180,41,.08)', low:'transparent' }
-  const IMP_STARS: Record<ImpactLevel,string> = { high:'★★★', med:'★★☆', low:'★☆☆' }
-
-  const chip = (active: boolean, label: string, color = '#f0b429') => ({
-    padding:'5px 12px', borderRadius:4, fontSize:11, fontWeight:600 as const, cursor:'pointer' as const,
-    border:`1px solid ${active?color+'66':'rgba(255,255,255,.08)'}`,
-    background:active?color+'15':'rgba(255,255,255,.02)',
-    color:active?color:'#4a5e72', transition:'all 120ms', fontFamily:'inherit',
+  // Pill style
+  const pill = (active:boolean, color='#f0b429') => ({
+    padding:'5px 14px', borderRadius:20, fontSize:11, fontWeight:600 as const, cursor:'pointer' as const,
+    border:`1px solid ${active?color+'55':'rgba(255,255,255,.07)'}`,
+    background:active?color+'12':'transparent',
+    color:active?color:'#3d5060', transition:'all 150ms', fontFamily:'inherit',
   })
 
   return (
-    <div style={{height:'100%',display:'flex',flexDirection:'column',background:'#07090e',fontFamily:"'Inter',-apple-system,sans-serif",overflow:'hidden'}}>
+    <div style={{height:'100%',display:'flex',flexDirection:'column',background:'#06080d',fontFamily:"'Inter',-apple-system,sans-serif",overflow:'hidden'}}>
 
-      {/* ══ HEADER PRINCIPAL ══ */}
-      <div style={{flexShrink:0,background:'linear-gradient(180deg,#0d1117 0%,#07090e 100%)',borderBottom:'1px solid rgba(255,255,255,.07)'}}>
-        {/* Titre centré */}
-        <div style={{textAlign:'center',padding:'28px 20px 0'}}>
-          <h1 style={{fontSize:28,fontWeight:800,letterSpacing:'-0.8px',color:'#f0f4f8',margin:0,lineHeight:1}}>
-            Calendrier <span style={{color:'#f0b429'}}>&</span> News Macro
-          </h1>
-          <p style={{fontSize:12,color:'#3d5060',marginTop:6,marginBottom:0}}>Données live · Refresh 30s · Forex Factory + Financial Juice</p>
+      {/* ══ HEADER PREMIUM ══ */}
+      <div style={{flexShrink:0,background:'linear-gradient(180deg,rgba(13,18,28,.95) 0%,rgba(6,8,13,.95) 100%)',borderBottom:'1px solid rgba(255,255,255,.06)',padding:'32px 48px 0'}}>
+        
+        {/* Top row: clock + refresh */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:24}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{width:3,height:28,background:'linear-gradient(180deg,#f0b429,#d4780a)',borderRadius:2}}/>
+            <div>
+              <div style={{fontSize:11,fontWeight:600,letterSpacing:'2px',color:'#3d5060',textTransform:'uppercase' as const}}>Institutional Trading Desk</div>
+              <h1 style={{fontSize:30,fontWeight:800,letterSpacing:'-0.8px',color:'#f0f4f8',margin:0,lineHeight:1.1}}>
+                Calendrier <span style={{color:'#f0b429'}}>&</span> News Macro
+              </h1>
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            <LiveClock/>
+            <div style={{width:1,height:20,background:'rgba(255,255,255,.07)'}}/>
+            {refreshing
+              ? <span style={{fontSize:10,color:'#f0b429',fontWeight:600,letterSpacing:'.5px',animation:'t-pulse 1s infinite'}}>● LIVE</span>
+              : <span style={{fontSize:10,color:'#2d3f50',letterSpacing:'.5px'}}>{lastUpdate&&`Mis à jour ${lastUpdate}`}</span>
+            }
+            <button onClick={fetchAll} style={{display:'flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,fontSize:10,fontWeight:600,cursor:'pointer',border:'1px solid rgba(255,255,255,.1)',background:'rgba(255,255,255,.04)',color:'#8a9db5',fontFamily:'inherit',letterSpacing:'.4px',transition:'all 150ms'}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,.08)';e.currentTarget.style.color='#c8d6e5'}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.04)';e.currentTarget.style.color='#8a9db5'}}>
+              ↻ Refresh
+            </button>
+          </div>
         </div>
 
-        {/* Onglets */}
-        <div style={{display:'flex',justifyContent:'center',gap:0,marginTop:24,paddingBottom:0}}>
-          {([['calendar','📅 Calendrier Économique'],['news','📰 News Macro Feed']] as [Tab,string][]).map(([t,l])=>(
+        {/* Countdown bar */}
+        {tab==='calendar'&&(
+          <div style={{marginBottom:20}}>
+            <NextEventCountdown events={events}/>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div style={{display:'flex',gap:0,borderBottom:'1px solid rgba(255,255,255,.06)',marginBottom:0}}>
+          {([['calendar','📅  Calendrier Économique'],['news','📰  News Macro Feed']] as [Tab,string][]).map(([t,l])=>(
             <button key={t} onClick={()=>setTab(t)} style={{
-              padding:'12px 36px', fontSize:13, fontWeight:tab===t?700:500, cursor:'pointer',
-              border:'none', borderBottom:tab===t?'3px solid #f0b429':'3px solid transparent',
-              background:'transparent', color:tab===t?'#f0b429':'#5a7080',
-              transition:'all 150ms', fontFamily:'inherit', letterSpacing:'-0.2px',
+              padding:'14px 32px', fontSize:13, fontWeight:tab===t?700:400,
+              cursor:'pointer', border:'none', letterSpacing:'-0.2px',
+              borderBottom:tab===t?'2px solid #f0b429':'2px solid transparent',
+              background:'transparent', color:tab===t?'#f0f4f8':'#4a5e72',
+              transition:'all 150ms', fontFamily:'inherit',
               display:'flex', alignItems:'center', gap:8,
+              marginBottom:-1,
             }}>
               {l}
               {t==='calendar'&&highCount>0&&(
-                <span style={{fontSize:9,padding:'2px 6px',borderRadius:10,background:'rgba(239,68,68,.2)',color:'#ef4444',fontWeight:700}}>{highCount} HIGH</span>
+                <span style={{fontSize:9,padding:'2px 7px',borderRadius:10,background:'rgba(239,68,68,.15)',color:'#ef4444',fontWeight:700,border:'1px solid rgba(239,68,68,.3)'}}>{highCount} HIGH</span>
               )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ══ CALENDRIER ══ */}
+      {/* ══ CALENDAR TAB ══ */}
       {tab==='calendar'&&<>
-        {/* Filtres */}
-        <div style={{padding:'12px 20px',borderBottom:'0.5px solid rgba(255,255,255,.06)',flexShrink:0,display:'flex',gap:6,flexWrap:'wrap' as const,alignItems:'center',background:'rgba(255,255,255,.01)'}}>
-          <span style={{fontSize:10,color:'#3d5060',marginRight:4,fontWeight:600,letterSpacing:'.5px'}}>IMPACT</span>
+
+        {/* Filter bar */}
+        <div style={{padding:'12px 48px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const,background:'rgba(255,255,255,.015)'}}>
+          <span style={{fontSize:9,fontWeight:700,letterSpacing:'1.5px',color:'#2d3f50',marginRight:4,textTransform:'uppercase' as const}}>IMPACT</span>
           {(['all','high','med','low'] as const).map(i=>{
-            const col = i==='high'?'#ef4444':i==='med'?'#f0b429':i==='low'?'#64748b':'#c8d6e5'
-            return <button key={i} onClick={()=>setImpactFilter(i)} style={chip(impactFilter===i, i==='all'?'Tous':i==='high'?'★★★':i==='med'?'★★☆':'★☆☆', col)}>
-              {i==='all'?'Tous':i==='high'?'★★★':i==='med'?'★★☆':'★☆☆'}
+            const c=i==='high'?'#ef4444':i==='med'?'#f0b429':i==='low'?'#4a5e72':'#c8d6e5'
+            return <button key={i} onClick={()=>setImpactFilter(i)} style={pill(impactFilter===i,c)}>
+              {i==='all'?'Tous':IC[i as ImpactLevel]?.stars}
             </button>
           })}
-          <div style={{width:1,height:20,background:'rgba(255,255,255,.07)',margin:'0 6px'}}/>
-          <span style={{fontSize:10,color:'#3d5060',marginRight:4,fontWeight:600,letterSpacing:'.5px'}}>DEVISE</span>
-          {CURRENCIES.map(c=><button key={c} onClick={()=>setCurrencyFilter(c)} style={chip(currencyFilter===c,c)}>{c}</button>)}
+          <div style={{width:1,height:20,background:'rgba(255,255,255,.07)',margin:'0 8px'}}/>
+          <span style={{fontSize:9,fontWeight:700,letterSpacing:'1.5px',color:'#2d3f50',marginRight:4,textTransform:'uppercase' as const}}>DEVISE</span>
+          {CURRENCIES.map(c=><button key={c} onClick={()=>setCurrencyFilter(c)} style={pill(currencyFilter===c)}>{c}</button>)}
           <div style={{flex:1}}/>
-          <div style={{display:'flex',alignItems:'center',gap:6}}>
-            {refreshing&&<span style={{fontSize:9,color:'#f0b429',animation:'t-pulse 1s infinite'}}>● live</span>}
-            {lastUpdate&&<span style={{fontSize:9,color:'#2d3f50',fontFamily:'IBM Plex Mono,monospace'}}>{lastUpdate}</span>}
-            <button onClick={fetchAll} style={{padding:'4px 10px',borderRadius:4,fontSize:10,cursor:'pointer',border:'0.5px solid rgba(255,255,255,.1)',background:'rgba(255,255,255,.03)',color:'#5a7080',fontFamily:'inherit',transition:'all 100ms'}} onMouseEnter={e=>e.currentTarget.style.color='#c8d6e5'} onMouseLeave={e=>e.currentTarget.style.color='#5a7080'}>↻ Refresh</button>
-          </div>
+          <span style={{fontSize:10,color:'#2d3f50'}}>{filteredEvents.length} événements</span>
         </div>
 
-        {/* Entêtes colonnes */}
-        <div style={{display:'grid',gridTemplateColumns:'40px 56px 22px 36px 1fr 130px 44px 44px 36px',gap:0,padding:'6px 20px',background:'rgba(0,0,0,.3)',borderBottom:'0.5px solid rgba(255,255,255,.05)',flexShrink:0}}>
-          {[['IMPACT',''],['HEURE',''],['',''],['',''],['ÉVÉNEMENT','flex'],['LOW │ FORE │ HIGH',''],['PREV','right'],['ACT','right'],['','']].map(([h,align],i)=>(
-            <span key={i} style={{fontSize:8,color:'#2d3f50',letterSpacing:'.5px',textTransform:'uppercase' as const,textAlign:(align||'left') as any}}>{h}</span>
+        {/* Column headers */}
+        <div style={{display:'grid',gridTemplateColumns:'56px 64px 24px 40px 1fr 150px 52px 52px 48px',padding:'8px 48px',background:'rgba(0,0,0,.35)',borderBottom:'1px solid rgba(255,255,255,.04)',flexShrink:0}}>
+          {[['IMPACT','left'],['HEURE ET','left'],['','left'],['','left'],['ÉVÉNEMENT','left'],['LOW │ FORE │ HIGH','center'],['PREV','right'],['ACT','right'],['','right']].map(([h,a],i)=>(
+            <span key={i} style={{fontSize:8,fontWeight:700,color:'#2d3f50',letterSpacing:'1.2px',textTransform:'uppercase' as const,textAlign:a as any}}>{h}</span>
           ))}
         </div>
 
-        {/* Liste événements */}
+        {/* Events */}
         <div style={{flex:1,overflowY:'auto'}}>
           {loading?(
-            <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:200,gap:10}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:200,gap:12}}>
               <span style={{width:14,height:14,borderRadius:'50%',border:'2px solid rgba(240,180,41,.3)',borderTopColor:'#f0b429',animation:'t-spin .7s linear infinite',display:'inline-block'}}/>
-              <span style={{fontSize:12,color:'#3d5060'}}>Chargement du calendrier…</span>
+              <span style={{fontSize:13,color:'#3d5060',fontWeight:500}}>Chargement des données de marché…</span>
             </div>
           ):grouped.length===0?(
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:200,gap:8}}>
-              <span style={{fontSize:32}}>📭</span>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:200,gap:10}}>
+              <span style={{fontSize:36}}>📭</span>
               <span style={{fontSize:13,color:'#3d5060'}}>Aucun événement pour ce filtre</span>
             </div>
           ):(
             grouped.map(([day,dayEvents])=>(
               <div key={day}>
-                {/* Séparateur jour */}
-                <div style={{display:'flex',alignItems:'center',gap:10,padding:'8px 20px',background:'rgba(240,180,41,.03)',borderTop:'0.5px solid rgba(240,180,41,.08)',borderBottom:'0.5px solid rgba(255,255,255,.04)',position:'sticky' as const,top:0,zIndex:2,backdropFilter:'blur(12px)'}}>
-                  <span style={{fontSize:11,fontWeight:700,color:'#f0b429',letterSpacing:'.5px',textTransform:'uppercase' as const}}>{day}</span>
-                  <div style={{flex:1,height:'0.5px',background:'rgba(255,255,255,.04)'}}/>
+                {/* Day separator */}
+                <div style={{display:'flex',alignItems:'center',gap:14,padding:'10px 48px',background:'rgba(240,180,41,.02)',borderTop:'1px solid rgba(240,180,41,.06)',borderBottom:'1px solid rgba(255,255,255,.03)',position:'sticky' as const,top:0,zIndex:3,backdropFilter:'blur(16px)'}}>
+                  <span style={{fontSize:10,fontWeight:800,color:'#f0b429',letterSpacing:'1.5px',textTransform:'uppercase' as const}}>{day}</span>
+                  <div style={{flex:1,height:'0.5px',background:'linear-gradient(90deg,rgba(240,180,41,.2),transparent)'}}/>
                   {dayEvents.some(e=>e.impactLevel==='high')&&(
-                    <span style={{fontSize:9,color:'#ef4444',fontWeight:700,display:'flex',alignItems:'center',gap:4}}>
-                      <span style={{width:5,height:5,borderRadius:'50%',background:'#ef4444',display:'inline-block',animation:'t-pulse 1.5s infinite'}}/>
-                      HIGH IMPACT
-                    </span>
+                    <div style={{display:'flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:4,background:'rgba(239,68,68,.08)',border:'1px solid rgba(239,68,68,.2)'}}>
+                      <span style={{width:4,height:4,borderRadius:'50%',background:'#ef4444',display:'inline-block',animation:'t-pulse 1.5s infinite'}}/>
+                      <span style={{fontSize:9,color:'#ef4444',fontWeight:700,letterSpacing:'.5px'}}>HIGH IMPACT</span>
+                    </div>
                   )}
-                  <span style={{fontSize:9,color:'#3d5060'}}>{dayEvents.length} events</span>
+                  <span style={{fontSize:9,color:'#2d3f50',fontWeight:500}}>{dayEvents.length} events</span>
                 </div>
 
-                {/* Lignes événements */}
-                {dayEvents.map(ev=>{
-                  const col = IMP_COLOR[ev.impactLevel]
-                  const bg  = IMP_BG[ev.impactLevel]
-                  const sts = IMP_STARS[ev.impactLevel]
+                {/* Rows */}
+                {dayEvents.map((ev,idx)=>{
+                  const ic = IC[ev.impactLevel]
                   const hasActual = !!ev.actual
+                  const isHigh = ev.impactLevel==='high'
                   return (
-                    <div key={ev.id} style={{display:'grid',gridTemplateColumns:'40px 56px 22px 36px 1fr 130px 44px 44px 36px',alignItems:'center',padding:'9px 20px',borderBottom:'0.5px solid rgba(255,255,255,.04)',background:ev.impactLevel==='high'?'rgba(239,68,68,.02)':'transparent',transition:'background 80ms'}}
-                      onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,.03)'}
-                      onMouseLeave={e=>e.currentTarget.style.background=ev.impactLevel==='high'?'rgba(239,68,68,.02)':'transparent'}>
+                    <div key={ev.id} style={{
+                      display:'grid',gridTemplateColumns:'56px 64px 24px 40px 1fr 150px 52px 52px 48px',
+                      alignItems:'center',padding:'11px 48px',
+                      borderBottom:'1px solid rgba(255,255,255,.03)',
+                      background:isHigh?'rgba(239,68,68,.018)':'transparent',
+                      borderLeft:isHigh?'3px solid rgba(239,68,68,.4)':'3px solid transparent',
+                      transition:'background 80ms',
+                    }}
+                      onMouseEnter={e=>e.currentTarget.style.background=isHigh?'rgba(239,68,68,.04)':'rgba(255,255,255,.025)'}
+                      onMouseLeave={e=>e.currentTarget.style.background=isHigh?'rgba(239,68,68,.018)':'transparent'}>
+
                       {/* Impact stars */}
-                      <span style={{fontSize:10,color:col,letterSpacing:.3,fontWeight:600}}>{sts}</span>
+                      <div style={{display:'flex',alignItems:'center',gap:4}}>
+                        <span style={{fontSize:10,color:ic.color,letterSpacing:.5,fontWeight:700}}>{ic.stars}</span>
+                      </div>
+
                       {/* Time */}
-                      <span style={{fontSize:10,color:'#8a9db5',fontFamily:'IBM Plex Mono,monospace',fontWeight:500}}>
+                      <span style={{fontSize:11,color:isHigh?'#c8d6e5':'#5a7080',fontFamily:'IBM Plex Mono,monospace',fontWeight:isHigh?600:400,letterSpacing:'.3px'}}>
                         {ev.time?.toLowerCase().replace(' ','')||'—'}
                       </span>
+
                       {/* Flag */}
-                      <span style={{fontSize:13}}>{ev.flag}</span>
+                      <span style={{fontSize:14,lineHeight:1}}>{ev.flag}</span>
+
                       {/* Country */}
-                      <span style={{fontSize:9,fontWeight:700,color:'#5a7080',letterSpacing:'.3px'}}>{ev.country}</span>
+                      <span style={{fontSize:10,fontWeight:700,color:'#4a5e72',letterSpacing:'.5px'}}>{ev.country}</span>
+
                       {/* Title */}
-                      <span style={{fontSize:12,fontWeight:ev.impactLevel==='high'?600:400,color:ev.impactLevel==='high'?'#f0f4f8':ev.impactLevel==='med'?'#c8d6e5':'#6a7d8f',lineHeight:1.3,paddingRight:12}}>
+                      <span style={{
+                        fontSize:isHigh?13:12, fontWeight:isHigh?600:400,
+                        color:isHigh?'#f0f4f8':ev.impactLevel==='med'?'#b8cad9':'#4a5e72',
+                        lineHeight:1.4, paddingRight:16,
+                        letterSpacing:isHigh?'-0.2px':'0',
+                      }}>
                         {ev.title}
                       </span>
+
                       {/* Forecast range */}
                       {ev.forecastLow&&ev.forecastHigh?(
-                        <div style={{display:'flex',alignItems:'center',gap:2,fontSize:9,fontFamily:'IBM Plex Mono,monospace',justifyContent:'center'}}>
-                          <span style={{color:'#ef4444'}}>{ev.forecastLow}</span>
-                          <span style={{color:'#2d3f50',margin:'0 1px'}}>│</span>
-                          <span style={{color:'#f0b429',fontWeight:700,fontSize:10}}>{ev.forecast}</span>
-                          <span style={{color:'#2d3f50',margin:'0 1px'}}>│</span>
-                          <span style={{color:'#22c55e'}}>{ev.forecastHigh}</span>
+                        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:3,fontSize:10,fontFamily:'IBM Plex Mono,monospace'}}>
+                          <span style={{color:'rgba(239,68,68,.7)'}}>{ev.forecastLow}</span>
+                          <span style={{color:'rgba(255,255,255,.12)'}}>│</span>
+                          <span style={{color:'#f0b429',fontWeight:700,fontSize:11}}>{ev.forecast}</span>
+                          <span style={{color:'rgba(255,255,255,.12)'}}>│</span>
+                          <span style={{color:'rgba(34,197,94,.7)'}}>{ev.forecastHigh}</span>
                         </div>
-                      ):<span style={{textAlign:'center' as const,fontSize:9,color:'#2d3f50',fontFamily:'IBM Plex Mono,monospace'}}>—</span>}
+                      ):<span style={{textAlign:'center' as const,fontSize:10,color:'#1e2a35',fontFamily:'IBM Plex Mono,monospace'}}>—</span>}
+
                       {/* Previous */}
-                      <span style={{fontSize:10,color:'#5a7080',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{ev.previous||'—'}</span>
+                      <span style={{fontSize:10,color:'#4a5e72',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{ev.previous||'—'}</span>
+
                       {/* Actual */}
-                      <span style={{fontSize:10,fontWeight:700,color:hasActual?'#22c55e':'#2a3a48',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{ev.actual||'—'}</span>
+                      <span style={{fontSize:11,fontWeight:hasActual?700:400,color:hasActual?'#22c55e':'#1e2a35',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>
+                        {ev.actual||'—'}
+                      </span>
+
                       {/* Badge */}
-                      <div style={{display:'flex',justifyContent:'center'}}>
-                        <span style={{fontSize:8,fontWeight:700,padding:'2px 5px',borderRadius:3,background:bg,color:col,border:`0.5px solid ${col}44`,letterSpacing:'.3px',textAlign:'center' as const}}>
-                          {ev.impactLevel==='high'?'HIGH':ev.impactLevel==='med'?'MED':'LOW'}
-                        </span>
+                      <div style={{display:'flex',justifyContent:'flex-end'}}>
+                        <span style={{
+                          fontSize:8,fontWeight:800,padding:'3px 6px',borderRadius:3,
+                          background:ic.bg,color:ic.color,
+                          border:`1px solid ${ic.border}`,
+                          letterSpacing:'.8px',textTransform:'uppercase' as const,
+                        }}>{ic.label}</span>
                       </div>
                     </div>
                   )
@@ -303,83 +388,97 @@ export function CalendarPanel() {
           )}
         </div>
 
-        {/* Footer */}
-        <div style={{padding:'5px 20px',borderTop:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <span style={{fontSize:9,color:'#2d3f50'}}>Source: Forex Factory • Auto-refresh 30s • Horaires ET (Eastern Time)</span>
-          <span style={{fontSize:9,color:'#2d3f50'}}>{filteredEvents.length} événements affichés</span>
+        <div style={{padding:'6px 48px',borderTop:'1px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(0,0,0,.2)'}}>
+          <span style={{fontSize:9,color:'#1e2a35',letterSpacing:'.4px'}}>SOURCE: FOREX FACTORY  •  AUTO-REFRESH 30S  •  HORAIRES ET (EASTERN TIME)</span>
+          <span style={{fontSize:9,color:'#1e2a35',letterSpacing:'.4px'}}>{filteredEvents.length} ÉVÉNEMENTS AFFICHÉS</span>
         </div>
       </>}
 
-      {/* ══ NEWS MACRO ══ */}
+      {/* ══ NEWS TAB ══ */}
       {tab==='news'&&<>
-        {/* Filtres */}
-        <div style={{padding:'12px 20px',borderBottom:'0.5px solid rgba(255,255,255,.06)',flexShrink:0,display:'flex',gap:6,flexWrap:'wrap' as const,alignItems:'center',background:'rgba(255,255,255,.01)'}}>
-          <span style={{fontSize:10,color:'#3d5060',marginRight:4,fontWeight:600,letterSpacing:'.5px'}}>IMPORTANCE</span>
-          {([['all','Toutes','#c8d6e5'],['high','🔴 Haute','#ef4444'],['med','🟡 Moyenne','#f0b429']] as [ImpactLevel|'all',string,string][]).map(([i,l,c])=>(
-            <button key={i} onClick={()=>setNewsImpact(i)} style={chip(newsImpact===i,l,c)}>{l}</button>
+
+        {/* Filter bar */}
+        <div style={{padding:'12px 48px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const,background:'rgba(255,255,255,.015)'}}>
+          <span style={{fontSize:9,fontWeight:700,letterSpacing:'1.5px',color:'#2d3f50',marginRight:4,textTransform:'uppercase' as const}}>IMPORTANCE</span>
+          {([['all','Toutes','#c8d6e5'],['high','Haute','#ef4444'],['med','Moyenne','#f0b429']] as const).map(([i,l,c])=>(
+            <button key={i} onClick={()=>setNewsImpact(i as any)} style={pill(newsImpact===i,c)}>{l}</button>
           ))}
-          <div style={{width:1,height:20,background:'rgba(255,255,255,.07)',margin:'0 6px'}}/>
-          <span style={{fontSize:10,color:'#3d5060',marginRight:4,fontWeight:600,letterSpacing:'.5px'}}>DEVISE</span>
-          {CURRENCIES.map(c=><button key={c} onClick={()=>setNewsCurrency(c)} style={chip(newsCurrency===c,c)}>{c}</button>)}
+          <div style={{width:1,height:20,background:'rgba(255,255,255,.07)',margin:'0 8px'}}/>
+          <span style={{fontSize:9,fontWeight:700,letterSpacing:'1.5px',color:'#2d3f50',marginRight:4,textTransform:'uppercase' as const}}>DEVISE</span>
+          {CURRENCIES.map(c=><button key={c} onClick={()=>setNewsCurrency(c)} style={pill(newsCurrency===c)}>{c}</button>)}
           <div style={{flex:1}}/>
           <div style={{display:'flex',alignItems:'center',gap:6}}>
-            {refreshing&&<span style={{fontSize:9,color:'#ef4444',fontWeight:700,animation:'t-pulse 1s infinite'}}>● LIVE</span>}
-            <button onClick={fetchAll} style={{padding:'4px 10px',borderRadius:4,fontSize:10,cursor:'pointer',border:'0.5px solid rgba(255,255,255,.1)',background:'rgba(255,255,255,.03)',color:'#5a7080',fontFamily:'inherit'}}>↻ Refresh</button>
+            {refreshing&&<span style={{fontSize:10,color:'#ef4444',fontWeight:700,letterSpacing:'.5px',animation:'t-pulse 1s infinite'}}>● LIVE</span>}
+            <button onClick={fetchAll} style={{padding:'5px 12px',borderRadius:5,fontSize:10,fontWeight:600,cursor:'pointer',border:'1px solid rgba(255,255,255,.1)',background:'rgba(255,255,255,.04)',color:'#8a9db5',fontFamily:'inherit',transition:'all 150ms'}} onMouseEnter={e=>e.currentTarget.style.color='#c8d6e5'} onMouseLeave={e=>e.currentTarget.style.color='#8a9db5'}>↻ Refresh</button>
           </div>
         </div>
 
-        {/* Feed news */}
+        {/* News feed */}
         <div style={{flex:1,overflowY:'auto'}}>
-          {filteredNews.map((item,idx)=>(
-            <div key={item.id} style={{
-              display:'flex', gap:14, padding:'14px 20px',
-              borderBottom:'0.5px solid rgba(255,255,255,.04)',
-              background:item.impact==='high'?'rgba(239,68,68,.03)':'transparent',
-              borderLeft:item.impact==='high'?'3px solid rgba(239,68,68,.6)':'3px solid transparent',
-              transition:'background 80ms', cursor:'pointer',
-            }}
-              onMouseEnter={e=>e.currentTarget.style.background=item.impact==='high'?'rgba(239,68,68,.06)':'rgba(255,255,255,.02)'}
-              onMouseLeave={e=>e.currentTarget.style.background=item.impact==='high'?'rgba(239,68,68,.03)':'transparent'}>
-              {/* Colonne gauche */}
-              <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,flexShrink:0,width:50}}>
-                <span style={{
-                  width:8,height:8,borderRadius:'50%',display:'block',flexShrink:0,
-                  background:item.impact==='high'?'#ef4444':item.impact==='med'?'#f0b429':'#374151',
-                  boxShadow:item.impact==='high'?'0 0 8px rgba(239,68,68,.7)':item.impact==='med'?'0 0 6px rgba(240,180,41,.5)':'none',
-                  animation:item.impact==='high'?'t-pulse 1.5s infinite':'none',
-                }}/>
-                {item.currency!=='ALL'&&<span style={{fontSize:14}}>{FLAGS[item.currency]||'🌐'}</span>}
-                <span style={{fontSize:9,color:'#2d3f50',fontFamily:'IBM Plex Mono,monospace',whiteSpace:'nowrap' as const}}>{item.age}</span>
-              </div>
-              {/* Contenu */}
-              <div style={{flex:1,minWidth:0}}>
-                <p style={{
-                  fontSize:13,
-                  fontWeight:item.impact==='high'?600:400,
-                  color:item.impact==='high'?'#f0f4f8':item.impact==='med'?'#c8d6e5':'#7a8fa8',
-                  lineHeight:1.55, margin:'0 0 8px',
-                }}>
-                  {item.title}
-                </p>
-                <div style={{display:'flex',gap:4,flexWrap:'wrap' as const}}>
-                  {item.impact==='high'&&(
-                    <span style={{fontSize:9,fontWeight:800,padding:'2px 7px',borderRadius:3,background:'rgba(239,68,68,.15)',color:'#ef4444',border:'0.5px solid rgba(239,68,68,.3)',letterSpacing:'.4px'}}>🔴 HAUTE IMPORTANCE</span>
+          {filteredNews.map((item,idx)=>{
+            const isHigh = item.impact==='high'
+            const isMed  = item.impact==='med'
+            return (
+              <div key={item.id} style={{
+                display:'flex',gap:20,padding:'18px 48px',
+                borderBottom:'1px solid rgba(255,255,255,.035)',
+                background:isHigh?'rgba(239,68,68,.025)':'transparent',
+                borderLeft:isHigh?'3px solid rgba(239,68,68,.5)':isMed?'3px solid rgba(240,180,41,.3)':'3px solid rgba(255,255,255,.04)',
+                transition:'background 80ms',cursor:'pointer',
+              }}
+                onMouseEnter={e=>e.currentTarget.style.background=isHigh?'rgba(239,68,68,.05)':'rgba(255,255,255,.02)'}
+                onMouseLeave={e=>e.currentTarget.style.background=isHigh?'rgba(239,68,68,.025)':'transparent'}>
+
+                {/* Left column */}
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,flexShrink:0,width:60,paddingTop:3}}>
+                  <span style={{
+                    width:8,height:8,borderRadius:'50%',display:'block',
+                    background:isHigh?'#ef4444':isMed?'#f0b429':'#2d3f50',
+                    boxShadow:isHigh?'0 0 10px rgba(239,68,68,.6)':isMed?'0 0 8px rgba(240,180,41,.4)':'none',
+                    animation:isHigh?'t-pulse 2s infinite':'none',flexShrink:0,
+                  }}/>
+                  {item.currency!=='ALL'&&<span style={{fontSize:16}}>{FLAGS[item.currency]||'🌐'}</span>}
+                  <span style={{fontSize:9,color:'#2d3f50',fontFamily:'IBM Plex Mono,monospace',textAlign:'center' as const,lineHeight:1.3}}>{item.age}</span>
+                </div>
+
+                {/* Content */}
+                <div style={{flex:1,minWidth:0}}>
+                  {/* Badge */}
+                  {isHigh&&(
+                    <div style={{display:'inline-flex',alignItems:'center',gap:5,marginBottom:8,padding:'3px 10px',borderRadius:3,background:'rgba(239,68,68,.12)',border:'1px solid rgba(239,68,68,.25)'}}>
+                      <span style={{width:4,height:4,borderRadius:'50%',background:'#ef4444',display:'inline-block',animation:'t-pulse 1.5s infinite'}}/>
+                      <span style={{fontSize:9,fontWeight:800,color:'#ef4444',letterSpacing:'1px'}}>HAUTE IMPORTANCE</span>
+                    </div>
                   )}
-                  {item.impact==='med'&&(
-                    <span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:3,background:'rgba(240,180,41,.1)',color:'#f0b429',border:'0.5px solid rgba(240,180,41,.25)',letterSpacing:'.4px'}}>🟡 IMPORTANCE MOYENNE</span>
+                  {isMed&&(
+                    <div style={{display:'inline-flex',alignItems:'center',gap:5,marginBottom:8,padding:'3px 10px',borderRadius:3,background:'rgba(240,180,41,.08)',border:'1px solid rgba(240,180,41,.2)'}}>
+                      <span style={{fontSize:9,fontWeight:700,color:'#f0b429',letterSpacing:'1px'}}>IMPORTANCE MOYENNE</span>
+                    </div>
                   )}
-                  {item.tags.slice(0,4).map(t=>(
-                    <span key={t} style={{fontSize:9,fontWeight:600,padding:'2px 6px',borderRadius:3,background:'rgba(255,255,255,.05)',color:'#5a7080',border:'0.5px solid rgba(255,255,255,.08)'}}>{t}</span>
-                  ))}
+
+                  <p style={{
+                    fontSize:isHigh?14:13, fontWeight:isHigh?600:400,
+                    color:isHigh?'#f0f4f8':isMed?'#c8d6e5':'#5a7080',
+                    lineHeight:1.6, margin:'0 0 10px',
+                    letterSpacing:isHigh?'-0.2px':'0',
+                  }}>
+                    {item.title}
+                  </p>
+
+                  <div style={{display:'flex',gap:5,flexWrap:'wrap' as const}}>
+                    {item.tags.slice(0,5).map(t=>(
+                      <span key={t} style={{fontSize:9,fontWeight:600,padding:'2px 8px',borderRadius:3,background:'rgba(255,255,255,.04)',color:'#4a5e72',border:'1px solid rgba(255,255,255,.07)',letterSpacing:'.4px'}}>{t}</span>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
-        <div style={{padding:'5px 20px',borderTop:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',justifyContent:'space-between'}}>
-          <span style={{fontSize:9,color:'#2d3f50'}}>Source: Financial Juice • Auto-refresh 30s</span>
-          <span style={{fontSize:9,color:'#2d3f50'}}>{filteredNews.length} news affichées</span>
+        <div style={{padding:'6px 48px',borderTop:'1px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',justifyContent:'space-between',background:'rgba(0,0,0,.2)'}}>
+          <span style={{fontSize:9,color:'#1e2a35',letterSpacing:'.4px'}}>SOURCE: FINANCIAL JUICE  •  AUTO-REFRESH 30S</span>
+          <span style={{fontSize:9,color:'#1e2a35',letterSpacing:'.4px'}}>{filteredNews.length} NEWS AFFICHÉES</span>
         </div>
       </>}
     </div>
