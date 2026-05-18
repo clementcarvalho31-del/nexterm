@@ -123,7 +123,7 @@ function DashboardHome({ onEnter }: { onEnter: (tab: TabId) => void }) {
             onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,.07)'; e.currentTarget.style.borderColor='rgba(255,255,255,.25)' }}
             onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.borderColor='rgba(255,255,255,.15)' }}
           >
-            Se connecter
+            Connecté
           </button>
           <button style={{
             padding: '8px 18px',
@@ -141,7 +141,7 @@ function DashboardHome({ onEnter }: { onEnter: (tab: TabId) => void }) {
             onMouseEnter={e => { e.currentTarget.style.opacity='0.9' }}
             onMouseLeave={e => { e.currentTarget.style.opacity='1' }}
           >
-            Commencer
+            Mon compte
           </button>
         </div>
       </nav>
@@ -246,7 +246,7 @@ export default function TerminalPage() {
             <span style={{ fontSize:10, color:'#f0b429', marginLeft:8 }}>← Home</span>
           </div>
           <button style={{ padding:'8px 18px', borderRadius:7, fontSize:12, fontWeight:700, color:'#000', background:'linear-gradient(135deg,#f0b429,#d4780a)', border:'none', cursor:'pointer' }}>
-            Se connecter
+            Connecté
           </button>
         </nav>
         <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
