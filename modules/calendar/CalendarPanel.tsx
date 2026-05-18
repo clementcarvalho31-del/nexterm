@@ -387,14 +387,13 @@ export function CalendarPanel() {
                       <span style={{fontSize:14,lineHeight:1}}>{ev.flag}</span>
 
                       {/* Country */}
-                      <span style={{fontSize:11,fontWeight:800,color:'#ffffff',letterSpacing:'.5px'}}>{ev.country}</span>
+                      <span style={{fontSize:11,fontWeight:800,color:'#4a5e72',letterSpacing:'.5px'}}>{ev.country}</span>
 
                       {/* Title */}
                       <span style={{
                         fontSize:13, fontWeight:700,
-                        color:'#ffffff',
-                        lineHeight:1.4, paddingRight:16,
-                        letterSpacing:'-0.2px',
+                        color:isHigh?'#f0f4f8':ev.impactLevel==='med'?'#b8cad9':'#8a9db5',
+                        lineHeight:1.4, paddingRight:16, letterSpacing:'-0.2px',
                       }}>
                         {ev.title}
                       </span>
@@ -513,10 +512,9 @@ export function CalendarPanel() {
                   )}
 
                   <p style={{
-                    fontSize:isHigh?14:13, fontWeight:isHigh?600:400,
-                    color:isHigh?'#f0f4f8':isMed?'#c8d6e5':'#5a7080',
-                    lineHeight:1.6, margin:'0 0 10px',
-                    letterSpacing:isHigh?'-0.2px':'0',
+                    fontSize:isHigh?14:13, fontWeight:700,
+                    color:isHigh?'#f0f4f8':isMed?'#c8d6e5':'#8a9db5',
+                    lineHeight:1.6, margin:'0 0 10px', letterSpacing:'-0.2px',
                   }}>
                     {item.title}
                   </p>
