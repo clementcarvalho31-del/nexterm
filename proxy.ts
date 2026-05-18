@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server'
 
 const isPublicRoute = createRouteMatcher([
   '/',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
+  '/login(.*)',
+  '/signup(.*)',
   '/pricing',
   '/api/stripe/webhook',
   '/api/market/snapshot',
@@ -16,7 +16,7 @@ export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth()
 
   if (!userId) {
-    const signInUrl = new URL('/sign-in', req.url)
+    const signInUrl = new URL('/login', req.url)
     signInUrl.searchParams.set('redirect_url', req.url)
     return NextResponse.redirect(signInUrl)
   }
