@@ -1,10 +1,12 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 const STEPS = ['Account', 'Profile', 'Plan']
 
 export default function SignupPage() {
+  const router = useRouter()
   const [step, setStep] = useState(0)
   const [form, setForm] = useState({ email:'', password:'', name:'', plan:'pro' })
   const [loading, setLoading] = useState(false)
@@ -16,7 +18,7 @@ export default function SignupPage() {
     e.preventDefault()
     if (step < 2) { setStep(s=>s+1); return }
     setLoading(true)
-    setTimeout(() => { window.location.href = '/terminal' }, 1800)
+    setTimeout(() => { router.push('/terminal') }, 1800)
   }
 
   const inputStyle: React.CSSProperties = {
@@ -117,13 +119,21 @@ export default function SignupPage() {
               ].map(p=>(
                 <label key={p.id} style={{ display:'block', padding:14, borderRadius:8, border:`0.5px solid ${form.plan===p.id?'rgba(240,180,41,.4)':'rgba(255,255,255,.1)'}`, background:form.plan===p.id?'rgba(240,180,41,.06)':'transparent', cursor:'pointer', transition:'all 120ms' }}>
                   <input type="radio" name="plan" value={p.id} checked={form.plan===p.id} onChange={upd('plan')} style={{ display:'none' }}/>
-                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
-                    <span style={{ fontSize:14, fontWeight:700, color:'#f0f4f8' }}>{p.name}</span>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ fontSize:14, fontWeight:700, color:'#f0f4f8' }}>{p.name}</span>
+                      <span style={{ fontSize:10, fontWeight:700, color:'#22c55e', background:'rgba(34,197,94,.12)', border:'0.5px solid rgba(34,197,94,.25)', borderRadius:100, padding:'2px 7px', letterSpacing:'0.3px' }}>3 DAYS FREE</span>
+                    </div>
                     <span style={{ fontSize:14, fontWeight:700, color:form.plan===p.id?'#f0b429':'#8a9db5' }}>{p.price}</span>
                   </div>
-                  <p style={{ fontSize:12, color:'#5a7080' }}>{p.desc}</p>
+                  <p style={{ fontSize:12, color:'#5a7080', marginBottom:0 }}>{p.desc}</p>
                 </label>
               ))}
+              {/* Trial reminder */}
+              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 12px', borderRadius:8, background:'rgba(34,197,94,.05)', border:'0.5px solid rgba(34,197,94,.15)' }}>
+                <span style={{ fontSize:16 }}>🎁</span>
+                <p style={{ fontSize:12, color:'#5a9070', margin:0 }}>Your <strong style={{ color:'#22c55e' }}>3-day free trial</strong> starts immediately — no credit card required.</p>
+              </div>
             </>}
 
             <button type="submit" disabled={loading} style={{ padding:'12px 20px', borderRadius:8, background:loading?'rgba(240,180,41,.6)':'linear-gradient(135deg,#f0b429,#d4780a)', border:'none', color:'#000', fontSize:14, fontWeight:700, cursor:loading?'wait':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 2px 12px rgba(240,180,41,.25)', marginTop:4 }}>
