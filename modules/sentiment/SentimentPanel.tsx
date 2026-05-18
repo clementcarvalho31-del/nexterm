@@ -370,7 +370,8 @@ export function SentimentPanel() {
   const [wdays,setWdays]           = useState<WeekdayBar[]>([])
   const [refreshing,setRefreshing] = useState(false)
   const [lastUpd,setLastUpd]       = useState('')
-  const [tab,setTab]               = useState<'combined'|'sentiment'|'seasonality'>('combined')
+  const [tab,setTab]               = useState<'sentiment'|'seasonality'>('sentiment')
+  const [layout,setLayout]         = useState<'single'|'split'>('single')
   const [modal,setModal]           = useState<SentimentData|null>(null)
 
   // Widget states
@@ -426,146 +427,85 @@ export function SentimentPanel() {
             <button onClick={fetch_} style={{padding:'5px 12px',borderRadius:5,fontSize:9,fontWeight:700,cursor:'pointer',border:'1px solid rgba(255,255,255,.09)',background:'rgba(255,255,255,.04)',color:'#6a7d8f',fontFamily:'inherit',letterSpacing:'.5px',transition:'all 150ms'}} onMouseEnter={e=>e.currentTarget.style.color='#c8d6e5'} onMouseLeave={e=>e.currentTarget.style.color='#6a7d8f'}>↻ REFRESH</button>
           </div>
         </div>
-        {/* Tabs */}
-        <div style={{display:'flex',padding:'0 40px',borderBottom:'1px solid rgba(255,255,255,.05)',marginTop:16}}>
-          {([['combined','⚡ Vue combinée'],['sentiment','👥 Sentiment Retail'],['seasonality','📈 Saisonnalité']] as const).map(([t,l])=>(
-            <button key={t} onClick={()=>setTab(t)} style={{padding:'11px 22px',fontSize:12,fontWeight:tab===t?700:400,cursor:'pointer',border:'none',borderBottom:tab===t?'2px solid #a78bfa':'2px solid transparent',background:'transparent',color:tab===t?'#f0f4f8':'#3d5060',transition:'all 150ms',fontFamily:'inherit',marginBottom:-1,letterSpacing:tab===t?'-0.2px':'0'}}>
-              {l}
+        {/* Tabs + layout buttons */}
+        <div style={{display:'flex',padding:'0 40px',borderBottom:'1px solid rgba(255,255,255,.05)',marginTop:16,alignItems:'center'}}>
+          <div style={{display:'flex',flex:1}}>
+            {([['sentiment','👥 Sentiment Retail'],['seasonality','📈 Saisonnalité']] as const).map(([t,l])=>(
+              <button key={t} onClick={()=>setTab(t)} style={{padding:'11px 22px',fontSize:12,fontWeight:tab===t?700:400,cursor:'pointer',border:'none',borderBottom:tab===t?'2px solid #a78bfa':'2px solid transparent',background:'transparent',color:tab===t?'#f0f4f8':'#3d5060',transition:'all 150ms',fontFamily:'inherit',marginBottom:-1,letterSpacing:tab===t?'-0.2px':'0'}}>
+                {l}
+              </button>
+            ))}
+          </div>
+          {/* Layout toggle buttons */}
+          <div style={{display:'flex',gap:3,padding:'3px',borderRadius:6,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',marginBottom:1}}>
+            <button onClick={()=>setLayout('single')} title="Vue unique" style={{width:30,height:26,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'none',background:layout==='single'?'rgba(167,139,250,.2)':'transparent',transition:'all 120ms'}}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="2" width="12" height="12" rx="2" stroke={layout==='single'?'#a78bfa':'#4a5e72'} strokeWidth="1.5"/>
+              </svg>
             </button>
-          ))}
+            <button onClick={()=>setLayout('split')} title="Vue côte à côte" style={{width:30,height:26,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'none',background:layout==='split'?'rgba(167,139,250,.2)':'transparent',transition:'all 120ms'}}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="2" width="5" height="12" rx="1.5" stroke={layout==='split'?'#a78bfa':'#4a5e72'} strokeWidth="1.5"/>
+                <rect x="9" y="2" width="5" height="12" rx="1.5" stroke={layout==='split'?'#a78bfa':'#4a5e72'} strokeWidth="1.5"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ══ VUE COMBINÉE ══ */}
-      {tab==='combined'&&(
-        <div style={{flex:1,display:'flex',minHeight:0,overflow:'hidden'}}>
 
-          {/* Left panel — sentiment list */}
-          <div style={{width:280,flexShrink:0,borderRight:'1px solid rgba(255,255,255,.05)',display:'flex',flexDirection:'column',overflow:'hidden'}}>
-            <div style={{padding:'8px 16px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <span style={{fontSize:8,fontWeight:700,letterSpacing:'1.5px',color:'#2d3f50',textTransform:'uppercase' as const}}>Myfxbook Sentiment</span>
-              <span style={{fontSize:8,color:'#1e2c3d',letterSpacing:'.4px'}}>Cliquez pour détails</span>
+      {/* ══ SPLIT ══ */}
+      {layout==='split'&&(
+        <div style={{flex:1,display:'flex',minHeight:0,overflow:'hidden'}}>
+          <div style={{flex:1,display:'flex',flexDirection:'column' as const,borderRight:'1px solid rgba(255,255,255,.05)',overflow:'hidden'}}>
+            <div style={{padding:'6px 20px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0}}>
+              <span style={{fontSize:8,fontWeight:700,letterSpacing:'1.5px',color:'#2a3a4a',textTransform:'uppercase' as const}}>👥 Sentiment Retail</span>
             </div>
             <div style={{flex:1,overflowY:'auto' as const}}>
               {sentiment.map(s=>{
-                const iB=s.bias==='bullish'; const iS=s.bias==='bearish'
-                const bc2=iB?'#22c55e':iS?'#ef4444':'#64748b'
-                const isSel=pair===s.pair
+                const iB=s.bias==='bullish'; const iS=s.bias==='bearish'; const bc2=iB?'#22c55e':iS?'#ef4444':'#64748b'
                 return (
-                  <div key={s.pair} onClick={()=>setPair(s.pair as Pair)} style={{padding:'10px 14px',borderBottom:'0.5px solid rgba(255,255,255,.03)',cursor:'pointer',background:isSel?'rgba(167,139,250,.04)':'transparent',borderLeft:isSel?'2px solid #a78bfa':'2px solid transparent',transition:'all 80ms'}}
-                    onMouseEnter={e=>{if(!isSel)(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,.02)'}}
-                    onMouseLeave={e=>{if(!isSel)(e.currentTarget as HTMLElement).style.background='transparent'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
-                      <MiniDonut long={s.longPct} short={s.shortPct}/>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}>
-                          <span style={{fontSize:12,fontWeight:700,color:'#eef2f7',fontFamily:'IBM Plex Mono,monospace'}}>{s.pair}</span>
-                          <span style={{fontSize:7,fontWeight:800,padding:'1px 5px',borderRadius:2,background:`${bc2}14`,color:bc2,border:`0.5px solid ${bc2}30`,letterSpacing:'.5px'}}>{iB?'▲ LONG':iS?'▼ SHORT':'→'}</span>
-                          <span style={{marginLeft:'auto',fontSize:9,fontWeight:600,color:s.change24h>0?'#22c55e':'#ef4444',fontFamily:'IBM Plex Mono,monospace'}}>{s.change24h>0?'+':''}{s.change24h}%</span>
-                        </div>
-                        <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                          <span style={{fontSize:9,fontWeight:700,color:'#22c55e',fontFamily:'IBM Plex Mono,monospace'}}>{s.longPct}%</span>
-                          <span style={{fontSize:9,fontWeight:700,color:'#ef4444',fontFamily:'IBM Plex Mono,monospace'}}>{s.shortPct}%</span>
-                        </div>
-                        <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,.05)',overflow:'hidden',position:'relative' as const}}>
-                          <div style={{position:'absolute' as const,left:0,top:0,height:'100%',width:`${s.longPct}%`,background:'rgba(34,197,94,.55)',borderRadius:'2px 0 0 2px'}}/>
-                          <div style={{position:'absolute' as const,right:0,top:0,height:'100%',width:`${s.shortPct}%`,background:'rgba(239,68,68,.55)',borderRadius:'0 2px 2px 0'}}/>
-                        </div>
+                  <div key={s.pair} onClick={()=>setModal(s)} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',borderBottom:'0.5px solid rgba(255,255,255,.03)',cursor:'pointer',transition:'background 80ms'}}
+                    onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,.02)'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    <MiniDonut long={s.longPct} short={s.shortPct}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}>
+                        <span style={{fontSize:11,fontWeight:700,color:'#eef2f7',fontFamily:'IBM Plex Mono,monospace'}}>{s.pair}</span>
+                        <span style={{fontSize:7,fontWeight:800,padding:'1px 5px',borderRadius:2,background:`${bc2}14`,color:bc2,border:`0.5px solid ${bc2}30`}}>{iB?'▲ LONG':iS?'▼ SHORT':'→'}</span>
+                        <span style={{marginLeft:'auto',fontSize:9,fontWeight:600,color:s.change24h>0?'#22c55e':'#ef4444',fontFamily:'IBM Plex Mono,monospace'}}>{s.change24h>0?'+':''}{s.change24h}%</span>
                       </div>
-                    </div>
-                    <div style={{display:'flex',justifyContent:'space-between',paddingLeft:44}}>
-                      <span style={{fontSize:7,color:'#2a3a4a',fontFamily:'IBM Plex Mono,monospace'}}>{s.longVol.toLocaleString()} L</span>
-                      <button onClick={e=>{e.stopPropagation();setModal(s)}} style={{fontSize:7,color:'#a78bfa',background:'transparent',border:'none',cursor:'pointer',padding:0,letterSpacing:'.3px'}}>Voir détails →</button>
-                      <span style={{fontSize:7,color:'#2a3a4a',fontFamily:'IBM Plex Mono,monospace'}}>{s.shortVol.toLocaleString()} S</span>
+                      <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,.05)',overflow:'hidden',position:'relative' as const}}>
+                        <div style={{position:'absolute' as const,left:0,top:0,height:'100%',width:`${s.longPct}%`,background:'rgba(34,197,94,.55)',borderRadius:'2px 0 0 2px'}}/>
+                        <div style={{position:'absolute' as const,right:0,top:0,height:'100%',width:`${s.shortPct}%`,background:'rgba(239,68,68,.55)',borderRadius:'0 2px 2px 0'}}/>
+                      </div>
+                      <div style={{display:'flex',justifyContent:'space-between',marginTop:2}}>
+                        <span style={{fontSize:8,fontWeight:700,color:'#22c55e',fontFamily:'IBM Plex Mono,monospace'}}>{s.longPct}%</span>
+                        <span style={{fontSize:8,fontWeight:700,color:'#ef4444',fontFamily:'IBM Plex Mono,monospace'}}>{s.shortPct}%</span>
+                      </div>
                     </div>
                   </div>
                 )
               })}
             </div>
-            <div style={{padding:'4px 14px',borderTop:'0.5px solid rgba(255,255,255,.03)',flexShrink:0}}>
-              <span style={{fontSize:7,color:'#1a2535',letterSpacing:'.5px'}}>MYFXBOOK • REFRESH 60S</span>
-            </div>
           </div>
-
-          {/* Right — seasonality */}
-          <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-            {/* Subheader */}
-            <div style={{padding:'8px 20px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',alignItems:'center',gap:10,background:'rgba(255,255,255,.01)'}}>
-              <span style={{fontSize:13,fontWeight:700,color:'#eef2f7',fontFamily:'IBM Plex Mono,monospace'}}>{pair}</span>
-              {cur&&(
-                <span style={{fontSize:9,padding:'2px 8px',borderRadius:3,background:cur.bullish?'rgba(34,197,94,.08)':'rgba(239,68,68,.08)',color:cur.bullish?'#22c55e':'#ef4444',border:`0.5px solid ${cur.bullish?'rgba(34,197,94,.2)':'rgba(239,68,68,.2)'}`,fontWeight:600,letterSpacing:'.3px'}}>
-                  {ML[NM]}: {cur.avg>0?'+':''}{cur.avg}% · {cur.positive}% pos
-                </span>
-              )}
+          <div style={{flex:1,display:'flex',flexDirection:'column' as const,overflow:'hidden'}}>
+            <div style={{padding:'6px 16px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const}}>
+              <span style={{fontSize:8,fontWeight:700,letterSpacing:'1.5px',color:'#2a3a4a',textTransform:'uppercase' as const}}>📈 Saisonnalité</span>
               <div style={{flex:1}}/>
-              {([20,10,5] as const).map(y=><button key={y} onClick={()=>setYears(y)} style={pill(years===y)}>{y} ans</button>)}
+              {PAIRS.slice(0,5).map(p=><button key={p} onClick={()=>setPair(p)} style={pill(pair===p)}>{p}</button>)}
+              {([10,5] as const).map(y=><button key={y} onClick={()=>setYears(y)} style={pill(years===y)}>{y}a</button>)}
             </div>
-
-            <div style={{flex:1,overflowY:'auto' as const,padding:'14px 20px',display:'flex',flexDirection:'column',gap:10}}>
-
-              {/* Bouton réafficher widgets masqués */}
-              {(!wTrend.visible||!wMonths.visible||!wWeek.visible||!wGrid.visible)&&(
-                <div style={{display:'flex',gap:6,flexWrap:'wrap' as const,padding:'4px 0'}}>
-                  {!wTrend.visible&&<button onClick={()=>setWTrend(w=>({...w,visible:true}))} style={{fontSize:9,padding:'3px 10px',borderRadius:3,border:'0.5px solid rgba(240,180,41,.3)',background:'rgba(240,180,41,.06)',color:'#f0b429',cursor:'pointer',fontFamily:'inherit'}}>+ Trend</button>}
-                  {!wMonths.visible&&<button onClick={()=>setWMonths(w=>({...w,visible:true}))} style={{fontSize:9,padding:'3px 10px',borderRadius:3,border:'0.5px solid rgba(240,180,41,.3)',background:'rgba(240,180,41,.06)',color:'#f0b429',cursor:'pointer',fontFamily:'inherit'}}>+ Monthly</button>}
-                  {!wWeek.visible&&<button onClick={()=>setWWeek(w=>({...w,visible:true}))} style={{fontSize:9,padding:'3px 10px',borderRadius:3,border:'0.5px solid rgba(240,180,41,.3)',background:'rgba(240,180,41,.06)',color:'#f0b429',cursor:'pointer',fontFamily:'inherit'}}>+ Weekday</button>}
-                  {!wGrid.visible&&<button onClick={()=>setWGrid(w=>({...w,visible:true}))} style={{fontSize:9,padding:'3px 10px',borderRadius:3,border:'0.5px solid rgba(240,180,41,.3)',background:'rgba(240,180,41,.06)',color:'#f0b429',cursor:'pointer',fontFamily:'inherit'}}>+ Grille mensuelle</button>}
-                </div>
-              )}
-
-              {wTrend.visible&&(
-                <div style={{maxHeight:wTrend.size==='small'?140:wTrend.size==='large'?440:'none',overflow:'hidden',transition:'max-height 200ms ease'}}>
-                  <Widget title={`Seasonal Trend · ${pair} · ${years} ans`} size={wTrend.size} onSize={s=>setWTrend(w=>({...w,size:s}))} onClose={()=>setWTrend(w=>({...w,visible:false}))}>
-                    <TrendChart data={seas} pair={pair} years={years}/>
-                  </Widget>
-                </div>
-              )}
-
-              <div style={{display:'grid',gridTemplateColumns:`${wMonths.visible&&wWeek.visible?'1fr 1fr':wMonths.visible||wWeek.visible?'1fr':'none'}`,gap:10}}>
-                {wMonths.visible&&(
-                  <div style={{maxHeight:wMonths.size==='small'?100:wMonths.size==='large'?320:'none',overflow:'hidden'}}>
-                    <Widget title="Avg Return by Month (%)" size={wMonths.size} onSize={s=>setWMonths(w=>({...w,size:s}))} onClose={()=>setWMonths(w=>({...w,visible:false}))}>
-                      <div style={{padding:'8px 12px 4px'}}><MonthChart data={seas}/></div>
-                    </Widget>
-                  </div>
-                )}
-                {wWeek.visible&&(
-                  <div style={{maxHeight:wWeek.size==='small'?100:wWeek.size==='large'?320:'none',overflow:'hidden'}}>
-                    <Widget title="Avg Return by Weekday (%)" size={wWeek.size} onSize={s=>setWWeek(w=>({...w,size:s}))} onClose={()=>setWWeek(w=>({...w,visible:false}))}>
-                      <div style={{padding:'8px 12px 4px'}}><WeekChart data={wdays}/></div>
-                    </Widget>
-                  </div>
-                )}
-              </div>
-
-              {wGrid.visible&&(
-                <Widget title="Grille mensuelle" size={wGrid.size} onSize={s=>setWGrid(w=>({...w,size:s}))} onClose={()=>setWGrid(w=>({...w,visible:false}))}>
-                  <div style={{padding:'10px 12px',maxHeight:wGrid.size==='small'?80:wGrid.size==='large'?400:'none',overflow:'hidden'}}>
-                    <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:5}}>
-                      {seas.map((b,i)=>(
-                        <div key={i} style={{padding:'7px 8px',borderRadius:5,background:i===NM?'rgba(240,180,41,.05)':'rgba(255,255,255,.015)',border:`1px solid ${i===NM?'rgba(240,180,41,.18)':'rgba(255,255,255,.04)'}`}}>
-                          <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
-                            <span style={{fontSize:9,fontWeight:700,color:i===NM?'#f0b429':'#6a7d8f'}}>{b.label}</span>
-                            <span style={{fontSize:9,fontWeight:700,color:b.bullish?'#22c55e':'#ef4444',fontFamily:'IBM Plex Mono,monospace'}}>{b.avg>0?'+':''}{b.avg}%</span>
-                          </div>
-                          <div style={{height:2,borderRadius:1,background:'rgba(255,255,255,.05)',overflow:'hidden',marginBottom:2}}>
-                            <div style={{height:'100%',width:`${b.positive}%`,background:b.bullish?'rgba(34,197,94,.5)':'rgba(239,68,68,.5)',borderRadius:1}}/>
-                          </div>
-                          <span style={{fontSize:7,color:'#2a3a4a'}}>{b.positive}% positif</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </Widget>
-              )}
-              <div style={{height:8}}/>
+            <div style={{flex:1,overflowY:'auto' as const,padding:'10px 14px',display:'flex',flexDirection:'column' as const,gap:8}}>
+              <TrendChart data={seas} pair={pair} years={years}/>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}><MonthChart data={seas}/><WeekChart data={wdays}/></div>
             </div>
           </div>
         </div>
       )}
 
       {/* ══ SENTIMENT SEUL ══ */}
-      {tab==='sentiment'&&(
+      {tab==='sentiment'&&layout==='single'&&(
         <>
           <div style={{padding:'8px 40px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,background:'rgba(255,255,255,.01)'}}>
             <span style={{fontSize:8,fontWeight:700,letterSpacing:'1.8px',color:'#2a3a4a',textTransform:'uppercase' as const}}>Myfxbook Community Outlook — Cliquez pour le détail</span>
@@ -605,7 +545,7 @@ export function SentimentPanel() {
       )}
 
       {/* ══ SAISONNALITÉ SEULE ══ */}
-      {tab==='seasonality'&&(
+      {tab==='seasonality'&&layout==='single'&&(
         <>
           <div style={{padding:'8px 40px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const,background:'rgba(255,255,255,.01)'}}>
             {PAIRS.map(p=><button key={p} onClick={()=>setPair(p)} style={pill(pair===p)}>{p}</button>)}
