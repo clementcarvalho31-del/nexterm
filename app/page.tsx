@@ -59,8 +59,43 @@ export default function LandingPage() {
 
       {/* ── Hero ── */}
       <section style={{ position:'relative', padding:'120px 32px 100px', textAlign:'center', overflow:'hidden' }}>
-        {/* Hero background image */}
-        <div style={{ position:'absolute', inset:0, backgroundImage:"url('/hero-bg.png')", backgroundSize:'cover', backgroundPosition:'center 30%', backgroundRepeat:'no-repeat', zIndex:0 }} />
+        {/* Hero background — candlestick SVG */}
+        <div style={{ position:'absolute', inset:0, zIndex:0, overflow:'hidden' }}>
+          <svg width="100%" height="100%" viewBox="0 0 1400 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="bg-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#0f1923"/>
+                <stop offset="100%" stopColor="#080b10"/>
+              </linearGradient>
+            </defs>
+            <rect width="1400" height="600" fill="url(#bg-grad)"/>
+            {/* Grid lines */}
+            {[100,200,300,400,500].map(y=><line key={y} x1="0" y1={y} x2="1400" y2={y} stroke="rgba(255,255,255,.03)" strokeWidth="1"/>)}
+            {[0,100,200,300,400,500,600,700,800,900,1000,1100,1200,1300].map(x=><line key={x} x1={x} y1="0" x2={x} y2="600" stroke="rgba(255,255,255,.02)" strokeWidth="1"/>)}
+            {/* Candlesticks — bearish red */}
+            {[[60,180,220,140],[120,240,280,200],[180,200,250,160],[240,280,320,260],[300,260,310,220],[360,300,350,270],[420,280,330,250],[480,310,360,290],[540,290,340,260],[600,320,370,300]].map(([x,open,high,low],i)=>(
+              <g key={i} opacity="0.35">
+                <line x1={x} y1={high} x2={x} y2={low} stroke="#ef4444" strokeWidth="1.5"/>
+                <rect x={x-8} y={Math.min(open,low)} width="16" height={Math.abs(open-low)||4} fill="#ef4444" rx="1"/>
+              </g>
+            ))}
+            {/* Candlesticks — bullish green */}
+            {[[660,340,280,360],[720,300,250,320],[780,270,210,300],[840,250,190,280],[900,230,170,260],[960,210,150,240],[1020,190,130,220],[1080,170,110,200],[1140,150,90,180],[1200,130,70,160],[1260,110,50,140],[1320,90,30,120]].map(([x,open,low,high],i)=>(
+              <g key={i} opacity="0.35">
+                <line x1={x} y1={low} x2={x} y2={high} stroke="#22c55e" strokeWidth="1.5"/>
+                <rect x={x-8} y={Math.min(open,high)} width="16" height={Math.abs(open-high)||4} fill="#22c55e" rx="1"/>
+              </g>
+            ))}
+            {/* Moving average line */}
+            <polyline points="60,200 160,220 260,290 360,310 460,295 560,310 660,320 760,280 860,240 960,200 1060,170 1160,140 1260,110 1360,85" fill="none" stroke="rgba(240,180,41,.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            {/* Second MA */}
+            <polyline points="60,250 160,265 260,310 360,340 460,330 560,345 660,355 760,320 860,280 960,240 1060,205 1160,175 1260,145 1360,115" fill="none" stroke="rgba(59,130,246,.25)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6 4"/>
+            {/* Glow orbs */}
+            <circle cx="700" cy="300" r="250" fill="rgba(240,180,41,.04)"/>
+            <circle cx="1100" cy="200" r="150" fill="rgba(34,197,94,.03)"/>
+            <circle cx="300" cy="350" r="180" fill="rgba(239,68,68,.03)"/>
+          </svg>
+        </div>
         {/* Dark overlay — keeps text readable */}
         <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, rgba(8,11,16,.55) 0%, rgba(8,11,16,.3) 40%, rgba(8,11,16,.75) 75%, rgba(8,11,16,1) 100%)', zIndex:1 }} />
         {/* Extra side vignette */}

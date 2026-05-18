@@ -40,13 +40,12 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
 
   return (
     <div style={{ minHeight:'100vh', background:'#080b10', display:'flex', flexDirection:'column', fontFamily:"'Inter',-apple-system,sans-serif", position:'relative', overflow:'hidden' }}>
-      {/* Ambient blobs */}
-      <div style={{ position:'absolute', width:700, height:700, borderRadius:'50%', background:'rgba(240,180,41,.025)', filter:'blur(140px)', top:'20%', left:'50%', transform:'translate(-50%,-50%)', pointerEvents:'none' }}/>
-      <div style={{ position:'absolute', width:500, height:500, borderRadius:'50%', background:'rgba(239,68,68,.02)', filter:'blur(120px)', bottom:'5%', right:'5%', pointerEvents:'none' }}/>
-      <div style={{ position:'absolute', width:400, height:400, borderRadius:'50%', background:'rgba(167,139,250,.015)', filter:'blur(100px)', bottom:'15%', left:'5%', pointerEvents:'none' }}/>
-
-      {/* Subtle grid */}
-      <div style={{ position:'absolute', inset:0, backgroundImage:'linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px)', backgroundSize:'60px 60px', pointerEvents:'none' }}/>
+      {/* Hero background image */}
+      <div style={{ position:'absolute', inset:0, backgroundImage:"url('/hero-bg.png')", backgroundSize:'cover', backgroundPosition:'center', backgroundRepeat:'no-repeat', pointerEvents:'none' }}/>
+      {/* Dark overlay */}
+      <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, rgba(8,11,16,.7) 0%, rgba(8,11,16,.5) 40%, rgba(8,11,16,.85) 100%)', pointerEvents:'none' }}/>
+      {/* Side vignette */}
+      <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at center, transparent 20%, rgba(8,11,16,.4) 100%)', pointerEvents:'none' }}/>
 
       {/* ── Header ── */}
       <header style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 32px', height:60, borderBottom:'0.5px solid rgba(255,255,255,.06)', flexShrink:0, position:'relative', zIndex:10, backdropFilter:'blur(10px)', background:'rgba(8,11,16,.8)' }}>
