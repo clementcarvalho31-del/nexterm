@@ -44,6 +44,9 @@ export function TopBar() {
           onMouseLeave={e=>{ if(activeTab!=='cot') e.currentTarget.style.color='var(--t-text-muted)' }}>
           Sentiment
         </button>
+        {/* Calendar */}
+        <button
+          onClick={() => setActiveTab('calendar')}
           style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:5, fontSize:13, fontFamily:'var(--t-font-sans)', fontWeight:activeTab==='calendar'?600:400, color:activeTab==='calendar'?'var(--t-accent-primary)':'var(--t-text-muted)', background:activeTab==='calendar'?'rgba(240,180,41,.08)':'transparent', border:activeTab==='calendar'?'0.5px solid rgba(240,180,41,.2)':'0.5px solid transparent', cursor:'pointer', transition:'all 120ms' }}
           onMouseEnter={e=>{ if(activeTab!=='calendar') e.currentTarget.style.color='var(--t-text-secondary)' }}
           onMouseLeave={e=>{ if(activeTab!=='calendar') e.currentTarget.style.color='var(--t-text-muted)' }}>
