@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type ImpactLevel = 'high' | 'med' | 'low'
+type ImpactLevel = 'high' | 'med' | 'low' // v2
 type Direction   = 'bullish' | 'bearish' | 'neutral'
 type Tab         = 'calendar' | 'news'
 type SortKey     = 'time' | 'impact' | 'country'
