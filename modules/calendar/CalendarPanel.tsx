@@ -233,29 +233,40 @@ export function CalendarPanel() {
   })
 
   const [layout, setLayout] = useState<'single'|'split'>('single')
+  const [splitLeft, setSplitLeft] = useState(50) // percentage
+  const isDragging = useRef(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const onDragStart = () => { isDragging.current = true }
+  const onDragMove = useCallback((e: MouseEvent) => {
+    if (!isDragging.current || !containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const pct = ((e.clientX - rect.left) / rect.width) * 100
+    setSplitLeft(Math.min(75, Math.max(25, pct)))
+  }, [])
+  const onDragEnd = () => { isDragging.current = false }
+
+  useEffect(() => {
+    window.addEventListener('mousemove', onDragMove)
+    window.addEventListener('mouseup', onDragEnd)
+    return () => { window.removeEventListener('mousemove', onDragMove); window.removeEventListener('mouseup', onDragEnd) }
+  }, [onDragMove])
 
   return (
-    <div style={{height:'100%',display:'flex',flexDirection:'column',background:'#06080d',fontFamily:"'Inter',-apple-system,sans-serif",overflow:'hidden'}}>
+    <div ref={containerRef} style={{height:'100%',display:'flex',flexDirection:'column',background:'#06080d',fontFamily:"'Inter',-apple-system,sans-serif",overflow:'hidden'}}>
 
       {/* ══ HEADER PREMIUM ══ */}
       <div style={{flexShrink:0,background:'linear-gradient(180deg,rgba(13,18,28,.95) 0%,rgba(6,8,13,.95) 100%)',borderBottom:'1px solid rgba(255,255,255,.06)',padding:'28px 48px 0'}}>
         
         {/* Top row */}
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
-          {/* Titre + heure inline */}
+          {/* Titre */}
           <div style={{display:'flex',alignItems:'center',gap:16}}>
             <div>
               <div style={{fontSize:11,fontWeight:600,letterSpacing:'2px',color:'#3d5060',textTransform:'uppercase' as const,marginBottom:2}}>Institutional Trading Desk</div>
-              <div style={{display:'flex',alignItems:'center',gap:12}}>
-                <h1 style={{fontSize:28,fontWeight:800,letterSpacing:'-0.8px',color:'#f0f4f8',margin:0,lineHeight:1.1}}>
-                  Calendrier <span style={{color:'#f0b429'}}>&</span> News Macro
-                </h1>
-                {/* Heure à côté du titre */}
-                <div style={{display:'flex',alignItems:'center',gap:6,padding:'4px 10px',borderRadius:5,background:'rgba(240,180,41,.06)',border:'1px solid rgba(240,180,41,.12)'}}>
-                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#f0b429" strokeWidth="1.2"/><path d="M6 3v3l2 1.5" stroke="#f0b429" strokeWidth="1.2" strokeLinecap="round"/></svg>
-                  <LiveClock/>
-                </div>
-              </div>
+              <h1 style={{fontSize:28,fontWeight:800,letterSpacing:'-0.8px',color:'#f0f4f8',margin:0,lineHeight:1.1}}>
+                Calendrier <span style={{color:'#f0b429'}}>&</span> News Macro
+              </h1>
             </div>
           </div>
 
@@ -561,7 +572,7 @@ export function CalendarPanel() {
       {layout==='split'&&(
         <div style={{flex:1,display:'flex',minHeight:0,overflow:'hidden'}}>
           {/* Left: Calendar */}
-          <div style={{flex:1,display:'flex',flexDirection:'column',borderRight:'1px solid rgba(255,255,255,.06)',overflow:'hidden'}}>
+          <div style={{width:`${splitLeft}%`,display:'flex',flexDirection:'column',overflow:'hidden',flexShrink:0}}>
             {/* Filter bar calendar */}
             <div style={{padding:'8px 20px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,display:'flex',alignItems:'center',gap:4,flexWrap:'wrap' as const,background:'rgba(255,255,255,.01)'}}>
               {(['all','high','med','low'] as const).map(i=>{
@@ -613,8 +624,15 @@ export function CalendarPanel() {
             </div>
           </div>
 
+          {/* Draggable divider */}
+          <div onMouseDown={onDragStart} style={{width:5,flexShrink:0,cursor:'col-resize',background:'transparent',borderLeft:'1px solid rgba(255,255,255,.06)',borderRight:'1px solid rgba(255,255,255,.06)',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 150ms',userSelect:'none' as const}}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(240,180,41,.15)'}
+            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+            <div style={{width:1,height:40,background:'rgba(240,180,41,.3)',borderRadius:1}}/>
+          </div>
+
           {/* Right: News */}
-          <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+          <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minWidth:0}}>
             {/* Filter bar news */}
             <div style={{padding:'8px 20px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,display:'flex',alignItems:'center',gap:4,flexWrap:'wrap' as const,background:'rgba(255,255,255,.01)'}}>
               {(['all','high','med'] as const).map(i=>{
