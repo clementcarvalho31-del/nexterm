@@ -228,7 +228,31 @@ function Gauge({ score }: { score: number }) {
   )
 }
 
-// ── Detail Modal ─────────────────────────────────────────────────────────────
+// ── Widget wrapper ────────────────────────────────────────────────────────────
+type WidgetSize = 'normal' | 'large' | 'small'
+function Widget({ title, children, onClose, size, onSize }: {
+  title: string; children: React.ReactNode
+  onClose: ()=>void; size: WidgetSize; onSize: (s: WidgetSize)=>void
+}) {
+  return (
+    <div style={{background:'rgba(255,255,255,.015)',borderRadius:8,border:'1px solid rgba(255,255,255,.06)',overflow:'hidden',display:'flex',flexDirection:'column' as const}}>
+      {/* Widget header */}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 12px',borderBottom:'0.5px solid rgba(255,255,255,.05)',background:'rgba(255,255,255,.02)',flexShrink:0}}>
+        <span style={{fontSize:9,fontWeight:700,color:'#4a5e72',letterSpacing:'.8px',textTransform:'uppercase' as const}}>{title}</span>
+        <div style={{display:'flex',gap:4}}>
+          <button onClick={()=>onSize('small')} title="Réduire" style={{width:18,height:18,borderRadius:3,background:size==='small'?'rgba(240,180,41,.15)':'rgba(255,255,255,.04)',border:`0.5px solid ${size==='small'?'rgba(240,180,41,.3)':'rgba(255,255,255,.08)'}`,cursor:'pointer',color:size==='small'?'#f0b429':'#4a5e72',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',transition:'all 100ms'}} onMouseEnter={e=>e.currentTarget.style.color='#f0b429'} onMouseLeave={e=>e.currentTarget.style.color=size==='small'?'#f0b429':'#4a5e72'}>−</button>
+          <button onClick={()=>onSize('normal')} title="Normal" style={{width:18,height:18,borderRadius:3,background:size==='normal'?'rgba(240,180,41,.15)':'rgba(255,255,255,.04)',border:`0.5px solid ${size==='normal'?'rgba(240,180,41,.3)':'rgba(255,255,255,.08)'}`,cursor:'pointer',color:size==='normal'?'#f0b429':'#4a5e72',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',transition:'all 100ms'}}>◼</button>
+          <button onClick={()=>onSize('large')} title="Agrandir" style={{width:18,height:18,borderRadius:3,background:size==='large'?'rgba(240,180,41,.15)':'rgba(255,255,255,.04)',border:`0.5px solid ${size==='large'?'rgba(240,180,41,.3)':'rgba(255,255,255,.08)'}`,cursor:'pointer',color:size==='large'?'#f0b429':'#4a5e72',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',transition:'all 100ms'}} onMouseEnter={e=>e.currentTarget.style.color='#f0b429'} onMouseLeave={e=>e.currentTarget.style.color=size==='large'?'#f0b429':'#4a5e72'}>+</button>
+          <div style={{width:'0.5px',height:14,background:'rgba(255,255,255,.08)',margin:'0 2px'}}/>
+          <button onClick={onClose} title="Fermer" style={{width:18,height:18,borderRadius:3,background:'rgba(255,255,255,.04)',border:'0.5px solid rgba(255,255,255,.08)',cursor:'pointer',color:'#4a5e72',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',transition:'all 100ms'}} onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='#4a5e72'}>✕</button>
+        </div>
+      </div>
+      <div style={{flex:1,overflow:'hidden'}}>
+        {children}
+      </div>
+    </div>
+  )
+}
 function DetailModal({ d, onClose }: { d: SentimentData; onClose: ()=>void }) {
   const iB=d.bias==='bullish'; const iS=d.bias==='bearish'
   const bc=iB?'#22c55e':iS?'#ef4444':'#64748b'
@@ -349,6 +373,15 @@ export function SentimentPanel() {
   const [tab,setTab]               = useState<'combined'|'sentiment'|'seasonality'>('combined')
   const [modal,setModal]           = useState<SentimentData|null>(null)
 
+  // Widget states
+  type WState = { visible: boolean; size: WidgetSize }
+  const [wTrend,setWTrend]     = useState<WState>({visible:true,size:'normal'})
+  const [wMonths,setWMonths]   = useState<WState>({visible:true,size:'normal'})
+  const [wWeek,setWWeek]       = useState<WState>({visible:true,size:'normal'})
+  const [wGrid,setWGrid]       = useState<WState>({visible:true,size:'normal'})
+
+  const sizeH: Record<WidgetSize,string> = { small:'120px', normal:'auto', large:'400px' }
+
   const fetch_ = useCallback(async()=>{
     setRefreshing(true)
     try {
@@ -468,26 +501,64 @@ export function SentimentPanel() {
               {([20,10,5] as const).map(y=><button key={y} onClick={()=>setYears(y)} style={pill(years===y)}>{y} ans</button>)}
             </div>
 
-            <div style={{flex:1,overflowY:'auto' as const,padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
-              <TrendChart data={seas} pair={pair} years={years}/>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                <MonthChart data={seas}/>
-                <WeekChart data={wdays}/>
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:5,paddingBottom:8}}>
-                {seas.map((b,i)=>(
-                  <div key={i} style={{padding:'8px 10px',borderRadius:5,background:i===NM?'rgba(240,180,41,.05)':'rgba(255,255,255,.015)',border:`1px solid ${i===NM?'rgba(240,180,41,.18)':'rgba(255,255,255,.04)'}`}}>
-                    <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                      <span style={{fontSize:9,fontWeight:700,color:i===NM?'#f0b429':'#6a7d8f'}}>{b.label}</span>
-                      <span style={{fontSize:9,fontWeight:700,color:b.bullish?'#22c55e':'#ef4444',fontFamily:'IBM Plex Mono,monospace'}}>{b.avg>0?'+':''}{b.avg}%</span>
-                    </div>
-                    <div style={{height:2,borderRadius:1,background:'rgba(255,255,255,.05)',overflow:'hidden',marginBottom:2}}>
-                      <div style={{height:'100%',width:`${b.positive}%`,background:b.bullish?'rgba(34,197,94,.5)':'rgba(239,68,68,.5)',borderRadius:1}}/>
-                    </div>
-                    <span style={{fontSize:7,color:'#2a3a4a'}}>{b.positive}% positif</span>
+            <div style={{flex:1,overflowY:'auto' as const,padding:'14px 20px',display:'flex',flexDirection:'column',gap:10}}>
+
+              {/* Bouton réafficher widgets masqués */}
+              {(!wTrend.visible||!wMonths.visible||!wWeek.visible||!wGrid.visible)&&(
+                <div style={{display:'flex',gap:6,flexWrap:'wrap' as const,padding:'4px 0'}}>
+                  {!wTrend.visible&&<button onClick={()=>setWTrend(w=>({...w,visible:true}))} style={{fontSize:9,padding:'3px 10px',borderRadius:3,border:'0.5px solid rgba(240,180,41,.3)',background:'rgba(240,180,41,.06)',color:'#f0b429',cursor:'pointer',fontFamily:'inherit'}}>+ Trend</button>}
+                  {!wMonths.visible&&<button onClick={()=>setWMonths(w=>({...w,visible:true}))} style={{fontSize:9,padding:'3px 10px',borderRadius:3,border:'0.5px solid rgba(240,180,41,.3)',background:'rgba(240,180,41,.06)',color:'#f0b429',cursor:'pointer',fontFamily:'inherit'}}>+ Monthly</button>}
+                  {!wWeek.visible&&<button onClick={()=>setWWeek(w=>({...w,visible:true}))} style={{fontSize:9,padding:'3px 10px',borderRadius:3,border:'0.5px solid rgba(240,180,41,.3)',background:'rgba(240,180,41,.06)',color:'#f0b429',cursor:'pointer',fontFamily:'inherit'}}>+ Weekday</button>}
+                  {!wGrid.visible&&<button onClick={()=>setWGrid(w=>({...w,visible:true}))} style={{fontSize:9,padding:'3px 10px',borderRadius:3,border:'0.5px solid rgba(240,180,41,.3)',background:'rgba(240,180,41,.06)',color:'#f0b429',cursor:'pointer',fontFamily:'inherit'}}>+ Grille mensuelle</button>}
+                </div>
+              )}
+
+              {wTrend.visible&&(
+                <div style={{maxHeight:wTrend.size==='small'?140:wTrend.size==='large'?440:'none',overflow:'hidden',transition:'max-height 200ms ease'}}>
+                  <Widget title={`Seasonal Trend · ${pair} · ${years} ans`} size={wTrend.size} onSize={s=>setWTrend(w=>({...w,size:s}))} onClose={()=>setWTrend(w=>({...w,visible:false}))}>
+                    <TrendChart data={seas} pair={pair} years={years}/>
+                  </Widget>
+                </div>
+              )}
+
+              <div style={{display:'grid',gridTemplateColumns:`${wMonths.visible&&wWeek.visible?'1fr 1fr':wMonths.visible||wWeek.visible?'1fr':'none'}`,gap:10}}>
+                {wMonths.visible&&(
+                  <div style={{maxHeight:wMonths.size==='small'?100:wMonths.size==='large'?320:'none',overflow:'hidden'}}>
+                    <Widget title="Avg Return by Month (%)" size={wMonths.size} onSize={s=>setWMonths(w=>({...w,size:s}))} onClose={()=>setWMonths(w=>({...w,visible:false}))}>
+                      <div style={{padding:'8px 12px 4px'}}><MonthChart data={seas}/></div>
+                    </Widget>
                   </div>
-                ))}
+                )}
+                {wWeek.visible&&(
+                  <div style={{maxHeight:wWeek.size==='small'?100:wWeek.size==='large'?320:'none',overflow:'hidden'}}>
+                    <Widget title="Avg Return by Weekday (%)" size={wWeek.size} onSize={s=>setWWeek(w=>({...w,size:s}))} onClose={()=>setWWeek(w=>({...w,visible:false}))}>
+                      <div style={{padding:'8px 12px 4px'}}><WeekChart data={wdays}/></div>
+                    </Widget>
+                  </div>
+                )}
               </div>
+
+              {wGrid.visible&&(
+                <Widget title="Grille mensuelle" size={wGrid.size} onSize={s=>setWGrid(w=>({...w,size:s}))} onClose={()=>setWGrid(w=>({...w,visible:false}))}>
+                  <div style={{padding:'10px 12px',maxHeight:wGrid.size==='small'?80:wGrid.size==='large'?400:'none',overflow:'hidden'}}>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:5}}>
+                      {seas.map((b,i)=>(
+                        <div key={i} style={{padding:'7px 8px',borderRadius:5,background:i===NM?'rgba(240,180,41,.05)':'rgba(255,255,255,.015)',border:`1px solid ${i===NM?'rgba(240,180,41,.18)':'rgba(255,255,255,.04)'}`}}>
+                          <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
+                            <span style={{fontSize:9,fontWeight:700,color:i===NM?'#f0b429':'#6a7d8f'}}>{b.label}</span>
+                            <span style={{fontSize:9,fontWeight:700,color:b.bullish?'#22c55e':'#ef4444',fontFamily:'IBM Plex Mono,monospace'}}>{b.avg>0?'+':''}{b.avg}%</span>
+                          </div>
+                          <div style={{height:2,borderRadius:1,background:'rgba(255,255,255,.05)',overflow:'hidden',marginBottom:2}}>
+                            <div style={{height:'100%',width:`${b.positive}%`,background:b.bullish?'rgba(34,197,94,.5)':'rgba(239,68,68,.5)',borderRadius:1}}/>
+                          </div>
+                          <span style={{fontSize:7,color:'#2a3a4a'}}>{b.positive}% positif</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Widget>
+              )}
+              <div style={{height:8}}/>
             </div>
           </div>
         </div>
