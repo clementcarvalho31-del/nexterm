@@ -253,11 +253,11 @@ function EventRow({ event, selected, onSelect }: { event:CalEvent; selected:bool
         onMouseEnter={e=>{if(!selected)(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,.02)'}}
         onMouseLeave={e=>{if(!selected)(e.currentTarget as HTMLElement).style.background=isSoon?'rgba(239,68,68,.02)':'transparent'}}>
 
-        {/* Impact dot */}
-        <span style={{width:6,height:6,borderRadius:'50%',background:imp.d,display:'inline-block',flexShrink:0,boxShadow:imp.g}}/>
+        {/* Stars */}
+        <span style={{fontSize:10,letterSpacing:1,width:32,flexShrink:0,color:event.impactLevel==='high'?'#ef4444':event.impactLevel==='med'?'#f0b429':'#374151'}}>{event.impactLevel==='high'?'★★★':event.impactLevel==='med'?'★★☆':'★☆☆'}</span>
 
         {/* Time */}
-        <span style={{fontSize:9,color:isSoon?'#f0b429':'#3d5060',width:36,flexShrink:0,fontFamily:'IBM Plex Mono,monospace',fontWeight:isSoon?700:400}}>{timeLabel}</span>
+        <span style={{fontSize:10,color:isSoon?'#f0b429':'#8a9db5',width:44,flexShrink:0,fontFamily:'IBM Plex Mono,monospace',fontWeight:isSoon?700:500}}>{event.time?.toLowerCase().replace(' ','') || '—'}</span>
 
         {/* Flag */}
         <span style={{fontSize:13,width:20,flexShrink:0,lineHeight:1}}>{event.flag}</span>
