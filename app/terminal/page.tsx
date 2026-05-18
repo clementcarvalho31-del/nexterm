@@ -1,7 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { TerminalLayout } from '@/layouts/TerminalLayout'
-import { useTerminalStore } from '@/store/terminal'
 import type { TabId } from '@/src/types'
 
 const MODULES = [
@@ -137,40 +135,20 @@ function DashboardHome({ onEnter }: { onEnter: (tab: TabId) => void }) {
           )
         })}
       </div>
-
-      <div style={{ display:'flex', alignItems:'center', gap:16, marginTop:48, position:'relative', zIndex:1 }}>
-        {[
-          { tab:'newsplay' as TabId, label:'Event Trades' },
-          { tab:'worldbook' as TabId, label:'Worldbook' },
-          { tab:'dashboard' as TabId, label:'Market Overview' },
-          { tab:'flows' as TabId, label:'Flows' },
-          { tab:'copilot' as TabId, label:'AI Copilot' },
-          { tab:'cot' as TabId, label:'COT' },
-        ].map(item => (
-          <button key={item.tab} onClick={() => onEnter(item.tab)} style={{ padding:'6px 14px', borderRadius:6, fontSize:11, fontWeight:500, color:'#4a5e72', background:'transparent', border:'0.5px solid rgba(255,255,255,.07)', cursor:'pointer', transition:'all 150ms' }}
-            onMouseEnter={e=>{ e.currentTarget.style.color='#c8d6e5'; e.currentTarget.style.borderColor='rgba(255,255,255,.15)' }}
-            onMouseLeave={e=>{ e.currentTarget.style.color='#4a5e72'; e.currentTarget.style.borderColor='rgba(255,255,255,.07)' }}>
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      <p style={{ marginTop:24, fontSize:10, color:'#2d3f50', position:'relative', zIndex:1 }}>
-        No credit card required · 3-day free trial · All data live
-      </p>
     </div>
   )
 }
 
 export default function TerminalPage() {
-  const [entered, setEntered] = useState(false)
-  const setActiveTab = useTerminalStore(s => s.setActiveTab)
+  const [activeModule, setActiveModule] = useState<TabId | null>(null)
 
-  const handleEnter = (tab: TabId) => {
-    setActiveTab(tab)
-    setEntered(true)
+  if (activeModule) {
+    return (
+      <div style={{ minHeight:'100vh', background:'#080b10', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <div style={{ color:'#4a5e72', fontSize:13 }}>— à coder —</div>
+      </div>
+    )
   }
 
-  if (!entered) return <DashboardHome onEnter={handleEnter} />
-  return <TerminalLayout />
+  return <DashboardHome onEnter={setActiveModule} />
 }
