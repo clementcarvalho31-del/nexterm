@@ -1,10 +1,12 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { useSignUp } from '@clerk/nextjs'
 
 const STEPS = ['Account', 'Profile', 'Plan']
 
 export default function SignupPage() {
+  const { signUp, setActive } = useSignUp()
   const [step, setStep] = useState(0)
   const [form, setForm] = useState({ email:'', password:'', name:'', plan:'pro' })
   const [loading, setLoading] = useState(false)
@@ -12,11 +14,22 @@ export default function SignupPage() {
   const upd = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
-  const next = (e: React.FormEvent) => {
+  const next = async (e: React.FormEvent) => {
     e.preventDefault()
     if (step < 2) { setStep(s=>s+1); return }
     setLoading(true)
-    setTimeout(() => { window.location.href = '/terminal' }, 1800)
+    try {
+      const result = await signUp!.create({
+        emailAddress: form.email,
+        password: form.password,
+        firstName: form.name,
+      })
+      await setActive!({ session: result.createdSessionId })
+      window.location.href = '/terminal'
+    } catch (err: any) {
+      alert(err.errors?.[0]?.message || 'Signup failed')
+      setLoading(false)
+    }
   }
 
   const inputStyle: React.CSSProperties = {
@@ -28,13 +41,11 @@ export default function SignupPage() {
 
   return (
     <div style={{ minHeight:'100vh', background:'#080b10', display:'flex', fontFamily:"'Inter',-apple-system,sans-serif", overflow:'hidden' }}>
-      {/* Left panel */}
       <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between', padding:'40px 48px', background:'rgba(240,180,41,.03)', borderRight:'0.5px solid rgba(255,255,255,.06)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:9 }}>
           <div style={{ width:28, height:28, background:'linear-gradient(135deg,#f0b429,#d4780a)', borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#000' }}>N</div>
           <span style={{ fontWeight:700, fontSize:15, color:'#f0f4f8', letterSpacing:'-0.3px' }}>Nexterm</span>
         </div>
-
         <div>
           <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'5px 10px', borderRadius:100, background:'rgba(240,180,41,.1)', border:'0.5px solid rgba(240,180,41,.2)', marginBottom:24 }}>
             <span style={{ fontSize:11, color:'#f0b429', fontWeight:600 }}>3-DAY FREE TRIAL</span>
@@ -45,28 +56,18 @@ export default function SignupPage() {
           <p style={{ fontSize:14, color:'#5a7080', lineHeight:1.7, maxWidth:380, marginBottom:32 }}>
             Realtime macro data, AI-powered market analysis, institutional charts, and COT positioning — all in one workspace.
           </p>
-          {[
-            'Realtime WebSocket streaming',
-            'AI Copilot with live market context',
-            'COT, yields, DXM, sentiment data',
-            'Multi-chart Bloomberg-style workspace',
-          ].map(f=>(
+          {['Realtime WebSocket streaming','AI Copilot with live market context','COT, yields, DXM, sentiment data','Multi-chart Bloomberg-style workspace'].map(f=>(
             <div key={f} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
               <span style={{ width:18, height:18, borderRadius:'50%', background:'rgba(34,197,94,.15)', border:'0.5px solid rgba(34,197,94,.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:'#22c55e', flexShrink:0 }}>✓</span>
               <span style={{ fontSize:13, color:'#8a9db5' }}>{f}</span>
             </div>
           ))}
         </div>
-
-        <div style={{ fontSize:12, color:'#3d5060' }}>
-          No credit card required for trial.
-        </div>
+        <div style={{ fontSize:12, color:'#3d5060' }}>No credit card required for trial.</div>
       </div>
 
-      {/* Right panel — form */}
       <div style={{ width:480, display:'flex', alignItems:'center', justifyContent:'center', padding:40, flexShrink:0 }}>
         <div style={{ width:'100%', maxWidth:360 }}>
-          {/* Step indicator */}
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:32 }}>
             {STEPS.map((s,i)=>(
               <div key={s} style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -112,8 +113,8 @@ export default function SignupPage() {
 
             {step === 2 && <>
               {[
-                { id:'pro', name:'Pro', price:'$49/mo', desc:'Full terminal access, AI Copilot, all data feeds', popular:true },
-                { id:'team', name:'Team', price:'$149/mo', desc:'Up to 5 seats, shared workspaces, admin dashboard', popular:false },
+                { id:'pro', name:'Pro', price:'$49/mo', desc:'Full terminal access, AI Copilot, all data feeds' },
+                { id:'team', name:'Team', price:'$149/mo', desc:'Up to 5 seats, shared workspaces, admin dashboard' },
               ].map(p=>(
                 <label key={p.id} style={{ display:'block', padding:14, borderRadius:8, border:`0.5px solid ${form.plan===p.id?'rgba(240,180,41,.4)':'rgba(255,255,255,.1)'}`, background:form.plan===p.id?'rgba(240,180,41,.06)':'transparent', cursor:'pointer', transition:'all 120ms' }}>
                   <input type="radio" name="plan" value={p.id} checked={form.plan===p.id} onChange={upd('plan')} style={{ display:'none' }}/>
