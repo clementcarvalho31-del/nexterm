@@ -198,6 +198,185 @@ function WeekdayBars({ data }: { data: WeekdayBar[] }) {
 
 // ── Donut Chart ───────────────────────────────────────────────────────────────
 function DonutChart({ longPct, shortPct }: { longPct: number; shortPct: number }) {
+  const R = 48; const SW = 10; const CX = 65; const CY = 65
+  const circ = 2 * Math.PI * R
+  const gap = 0.03 * circ
+  const longDash  = (longPct  / 100) * circ - gap
+  const shortDash = (shortPct / 100) * circ - gap
+
+  return (
+    <div style={{display:'flex',flexDirection:'column' as const,alignItems:'center',gap:8}}>
+      <svg width="130" height="130" viewBox="0 0 130 130">
+        <defs>
+          <filter id="dg"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="dr"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        {/* Track */}
+        <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,.05)" strokeWidth={SW}/>
+        {/* Short arc */}
+        <circle cx={CX} cy={CY} r={R} fill="none" stroke="#ef4444" strokeWidth={SW} strokeLinecap="round"
+          strokeDasharray={`${shortDash} ${circ - shortDash}`}
+          strokeDashoffset={circ / 4} filter="url(#dr)"/>
+        {/* Long arc — offset after short */}
+        <circle cx={CX} cy={CY} r={R} fill="none" stroke="#22c55e" strokeWidth={SW} strokeLinecap="round"
+          strokeDasharray={`${longDash} ${circ - longDash}`}
+          strokeDashoffset={circ / 4 - (shortPct / 100) * circ} filter="url(#dg)"/>
+        {/* Center */}
+        <text x={CX} y={CY - 8}  textAnchor="middle" fontSize="11" fontWeight="700" fill="#22c55e" fontFamily="IBM Plex Mono,monospace">{longPct}%</text>
+        <text x={CX} y={CY + 4}  textAnchor="middle" fontSize="8"  fill="#3d5060" fontFamily="IBM Plex Mono,monospace">Long</text>
+        <text x={CX} y={CY + 18} textAnchor="middle" fontSize="11" fontWeight="700" fill="#ef4444" fontFamily="IBM Plex Mono,monospace">{shortPct}%</text>
+      </svg>
+      <div style={{display:'flex',gap:12}}>
+        <div style={{display:'flex',alignItems:'center',gap:4}}>
+          <span style={{width:7,height:7,borderRadius:'50%',background:'#22c55e',display:'inline-block',boxShadow:'0 0 4px rgba(34,197,94,.5)'}}/>
+          <span style={{fontSize:9,color:'#5a7080'}}>Long</span>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:4}}>
+          <span style={{width:7,height:7,borderRadius:'50%',background:'#ef4444',display:'inline-block',boxShadow:'0 0 4px rgba(239,68,68,.5)'}}/>
+          <span style={{fontSize:9,color:'#5a7080'}}>Short</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Gauge Chart ───────────────────────────────────────────────────────────────
+function GaugeChart({ longPct, pair }: { longPct: number; pair: string }) {
+  const CX = 150; const CY = 130; const R = 100; const SW = 14
+  const score = longPct
+  const label = score >= 70 ? 'Strong Buy' : score >= 55 ? 'Buy' : score >= 45 ? 'Neutral' : score >= 30 ? 'Sell' : 'Strong Sell'
+  const labelColor = score >= 70 ? '#22c55e' : score >= 55 ? '#38bdf8' : score >= 45 ? '#f0b429' : score >= 30 ? '#f87171' : '#ef4444'
+  const needleAngle = Math.PI - (score / 100) * Math.PI
+  const nx = CX + (R - 18) * Math.cos(needleAngle)
+  const ny = CY - (R - 18) * Math.sin(needleAngle)
+
+  const seg = (s: number, e: number, color: string) => {
+    const sa = (s * Math.PI) / 180; const ea = (e * Math.PI) / 180
+    const x1 = CX + R * Math.cos(Math.PI - sa); const y1 = CY - R * Math.sin(Math.PI - sa)
+    const x2 = CX + R * Math.cos(Math.PI - ea); const y2 = CY - R * Math.sin(Math.PI - ea)
+    return <path d={`M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${R} ${R} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`} fill="none" stroke={color} strokeWidth={SW} strokeLinecap="round"/>
+  }
+
+  return (
+    <div style={{display:'flex',flexDirection:'column' as const,alignItems:'center',gap:4}}>
+      <svg width="300" height="165" viewBox="0 0 300 165">
+        {/* Segments */}
+        {seg(4,  38,  '#ef4444')}
+        {seg(42, 76,  '#f87171')}
+        {seg(80, 100, '#f0b429')}
+        {seg(100,120, '#f0b429')}
+        {seg(124,158, '#38bdf8')}
+        {seg(162,176, '#22c55e')}
+        {/* Track BG */}
+        <path d={`M ${CX-R} ${CY} A ${R} ${R} 0 0 1 ${CX+R} ${CY}`} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={SW}/>
+        {/* Segments on top */}
+        {seg(4,  38,  '#ef4444')}
+        {seg(42, 76,  '#f87171')}
+        {seg(80, 100, '#f0b429')}
+        {seg(100,120, '#f0b429')}
+        {seg(124,158, '#38bdf8')}
+        {seg(162,176, '#22c55e')}
+        {/* Labels */}
+        <text x="18"  y="128" fontSize="8" fill="#ef4444" textAnchor="middle">Strong</text>
+        <text x="18"  y="138" fontSize="8" fill="#ef4444" textAnchor="middle">Sell</text>
+        <text x="62"  y="72"  fontSize="8" fill="#f87171" textAnchor="middle">Sell</text>
+        <text x="150" y="28"  fontSize="8" fill="#f0b429" textAnchor="middle">Neutral</text>
+        <text x="238" y="72"  fontSize="8" fill="#38bdf8" textAnchor="middle">Buy</text>
+        <text x="282" y="128" fontSize="8" fill="#22c55e" textAnchor="middle">Strong</text>
+        <text x="282" y="138" fontSize="8" fill="#22c55e" textAnchor="middle">Buy</text>
+        {/* Needle */}
+        <line x1={CX} y1={CY} x2={nx.toFixed(1)} y2={ny.toFixed(1)} stroke={labelColor} strokeWidth="2" strokeLinecap="round" opacity="0.95"/>
+        <circle cx={CX} cy={CY} r="4" fill={labelColor} opacity="0.9"/>
+        {/* Label */}
+        <text x={CX} y={CY + 20} textAnchor="middle" fontSize="13" fontWeight="700" fill={labelColor} fontFamily="IBM Plex Mono,monospace">{label}</text>
+      </svg>
+    </div>
+  )
+}
+
+// ── Sentiment detail modal ────────────────────────────────────────────────────
+function SentimentDetail({ data, onClose }: { data: SentimentData; onClose: ()=>void }) {
+  const isBull = data.bias==='bullish'; const isBear = data.bias==='bearish'
+  const bc = isBull?'#22c55e':isBear?'#ef4444':'#64748b'
+
+  return (
+    <div style={{position:'fixed' as const,inset:0,background:'rgba(0,0,0,.8)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(10px)'}}
+      onClick={onClose}>
+      <div style={{background:'#0a0e16',border:'1px solid rgba(255,255,255,.1)',borderRadius:16,padding:'28px 32px',maxWidth:700,width:'92%',boxShadow:'0 32px 100px rgba(0,0,0,.8)',maxHeight:'90vh',overflowY:'auto' as const}}
+        onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:24}}>
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            <span style={{fontSize:24,fontWeight:800,color:'#f0f4f8',fontFamily:'IBM Plex Mono,monospace',letterSpacing:'-0.5px'}}>{data.pair}</span>
+            <span style={{fontSize:10,fontWeight:700,padding:'4px 12px',borderRadius:5,background:`${bc}12`,color:bc,border:`1px solid ${bc}25`,letterSpacing:'.8px',textTransform:'uppercase' as const}}>
+              {isBull?'▲ Majoritairement Long':isBear?'▼ Majoritairement Short':'→ Neutre'}
+            </span>
+          </div>
+          <button onClick={onClose} style={{background:'rgba(255,255,255,.05)',border:'1px solid rgba(255,255,255,.08)',color:'#5a7080',cursor:'pointer',fontSize:14,lineHeight:1,width:30,height:30,borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+        </div>
+
+        {/* TABLE EN HAUT */}
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#8a9db5',marginBottom:10,letterSpacing:'1px',textTransform:'uppercase' as const}}>Mesures Actuelles</div>
+          <div style={{borderRadius:8,overflow:'hidden',border:'1px solid rgba(255,255,255,.07)'}}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1fr',padding:'9px 18px',background:'rgba(255,255,255,.03)',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
+              {['Symbole','Action','Pourcentage','Volume','Positions'].map(h=>(
+                <span key={h} style={{fontSize:9,fontWeight:700,color:'#3d5060',letterSpacing:'.8px',textTransform:'uppercase' as const,textAlign:'center' as const}}>{h}</span>
+              ))}
+            </div>
+            {[
+              { label:'Court', pct:data.shortPct, vol:data.shortVol, pos:data.shortPos, color:'#ef4444', bg:'rgba(239,68,68,.03)' },
+              { label:'Long',  pct:data.longPct,  vol:data.longVol,  pos:data.longPos,  color:'#22c55e', bg:'rgba(34,197,94,.03)' },
+            ].map((row,i)=>(
+              <div key={i} style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1fr',padding:'13px 18px',background:row.bg,borderBottom:i===0?'0.5px solid rgba(255,255,255,.04)':'none',alignItems:'center'}}>
+                <span style={{fontSize:12,fontWeight:700,color:'#c8d6e5',textAlign:'center' as const,fontFamily:'IBM Plex Mono,monospace'}}>{data.pair}</span>
+                <span style={{fontSize:12,fontWeight:700,color:row.color,textAlign:'center' as const}}>{row.label}</span>
+                <span style={{fontSize:16,fontWeight:800,color:row.color,textAlign:'center' as const,fontFamily:'IBM Plex Mono,monospace'}}>{row.pct} <span style={{fontSize:12}}>%</span></span>
+                <span style={{fontSize:11,color:'#6a7d8f',textAlign:'center' as const,fontFamily:'IBM Plex Mono,monospace'}}>{row.vol.toLocaleString()} lots</span>
+                <span style={{fontSize:11,color:'#6a7d8f',textAlign:'center' as const,fontFamily:'IBM Plex Mono,monospace'}}>{row.pos.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bar */}
+        <div style={{marginBottom:24}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
+            <span style={{fontSize:11,fontWeight:700,color:'#22c55e'}}>Long {data.longPct}%</span>
+            <span style={{fontSize:11,fontWeight:700,color:'#ef4444'}}>Short {data.shortPct}%</span>
+          </div>
+          <div style={{height:8,borderRadius:4,overflow:'hidden',background:'rgba(255,255,255,.05)',display:'flex'}}>
+            <div style={{width:`${data.longPct}%`,background:'linear-gradient(90deg,#16a34a,#22c55e)',transition:'width 600ms ease'}}/>
+            <div style={{width:`${data.shortPct}%`,background:'linear-gradient(90deg,#ef4444,#dc2626)',transition:'width 600ms ease'}}/>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',marginTop:4}}>
+            <span style={{fontSize:9,color:'#3d5060'}}>{data.longPos.toLocaleString()} positions</span>
+            <span style={{fontSize:9,color:'#3d5060'}}>{data.shortPos.toLocaleString()} positions</span>
+          </div>
+        </div>
+
+        {/* DIAGRAMMES EN BAS */}
+        <div style={{display:'grid',gridTemplateColumns:'140px 1fr',gap:24,alignItems:'center',padding:'20px',background:'rgba(255,255,255,.02)',borderRadius:10,border:'1px solid rgba(255,255,255,.06)'}}>
+          <DonutChart longPct={data.longPct} shortPct={data.shortPct}/>
+          <GaugeChart longPct={data.longPct} pair={data.pair}/>
+        </div>
+
+        {/* Stats */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginTop:16}}>
+          {[['Total Long',`${data.longVol.toLocaleString()} lots`,'#22c55e'],['Total Short',`${data.shortVol.toLocaleString()} lots`,'#ef4444'],['Var 24h',`${data.change24h>0?'+':''}${data.change24h}%`,data.change24h>0?'#22c55e':'#ef4444']].map(([l,v,c])=>(
+            <div key={l as string} style={{padding:'12px',borderRadius:7,background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',textAlign:'center' as const}}>
+              <div style={{fontSize:8,fontWeight:700,color:'#2d3f50',letterSpacing:'1px',marginBottom:5,textTransform:'uppercase' as const}}>{l}</div>
+              <div style={{fontSize:15,fontWeight:800,color:c as string,fontFamily:'IBM Plex Mono,monospace'}}>{v}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{marginTop:16,fontSize:8,color:'#1e2a35',textAlign:'center' as const,letterSpacing:'.8px'}}>SOURCE: MYFXBOOK COMMUNITY OUTLOOK • DONNÉES EN TEMPS RÉEL</div>
+      </div>
+    </div>
+  )
+}
   const R = 52; const SW = 14; const CX = 70; const CY = 70
   const circ = 2 * Math.PI * R
   const longDash  = (longPct / 100) * circ
