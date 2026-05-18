@@ -260,25 +260,7 @@ export function CalendarPanel() {
           </div>
 
           {/* Right: layout toggle + refresh */}
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            {/* Layout buttons */}
-            <div style={{display:'flex',gap:3,padding:'3px',borderRadius:6,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)'}}>
-              {/* Single view */}
-              <button onClick={()=>setLayout('single')} title="Vue unique" style={{width:28,height:28,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'none',background:layout==='single'?'rgba(240,180,41,.15)':'transparent',transition:'all 120ms'}}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <rect x="2" y="2" width="12" height="12" rx="2" stroke={layout==='single'?'#f0b429':'#4a5e72'} strokeWidth="1.5"/>
-                </svg>
-              </button>
-              {/* Split view */}
-              <button onClick={()=>setLayout('split')} title="Vue côte à côte" style={{width:28,height:28,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'none',background:layout==='split'?'rgba(240,180,41,.15)':'transparent',transition:'all 120ms'}}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <rect x="2" y="2" width="5" height="12" rx="1.5" stroke={layout==='split'?'#f0b429':'#4a5e72'} strokeWidth="1.5"/>
-                  <rect x="9" y="2" width="5" height="12" rx="1.5" stroke={layout==='split'?'#f0b429':'#4a5e72'} strokeWidth="1.5"/>
-                </svg>
-              </button>
-            </div>
-
-            <div style={{width:1,height:20,background:'rgba(255,255,255,.07)'}}/>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginLeft:'auto'}}>
             {refreshing
               ? <span style={{fontSize:10,color:'#f0b429',fontWeight:600,letterSpacing:'.5px',animation:'t-pulse 1s infinite'}}>● LIVE</span>
               : <span style={{fontSize:10,color:'#2d3f50',letterSpacing:'.5px'}}>{lastUpdate&&`Mis à jour ${lastUpdate}`}</span>
@@ -286,6 +268,21 @@ export function CalendarPanel() {
             <button onClick={fetchAll} style={{display:'flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,fontSize:10,fontWeight:600,cursor:'pointer',border:'1px solid rgba(255,255,255,.1)',background:'rgba(255,255,255,.04)',color:'#8a9db5',fontFamily:'inherit',letterSpacing:'.4px',transition:'all 150ms'}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,.08)';e.currentTarget.style.color='#c8d6e5'}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.04)';e.currentTarget.style.color='#8a9db5'}}>
               ↻ Refresh
             </button>
+            <div style={{width:1,height:20,background:'rgba(255,255,255,.07)'}}/>
+            {/* Layout buttons */}
+            <div style={{display:'flex',gap:3,padding:'3px',borderRadius:6,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)'}}>
+              <button onClick={()=>setLayout('single')} title="Vue unique" style={{width:30,height:28,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'none',background:layout==='single'?'rgba(240,180,41,.2)':'transparent',transition:'all 120ms'}}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="2" y="2" width="12" height="12" rx="2" stroke={layout==='single'?'#f0b429':'#4a5e72'} strokeWidth="1.5"/>
+                </svg>
+              </button>
+              <button onClick={()=>setLayout('split')} title="Vue côte à côte" style={{width:30,height:28,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'none',background:layout==='split'?'rgba(240,180,41,.2)':'transparent',transition:'all 120ms'}}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="2" y="2" width="5" height="12" rx="1.5" stroke={layout==='split'?'#f0b429':'#4a5e72'} strokeWidth="1.5"/>
+                  <rect x="9" y="2" width="5" height="12" rx="1.5" stroke={layout==='split'?'#f0b429':'#4a5e72'} strokeWidth="1.5"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -317,8 +314,8 @@ export function CalendarPanel() {
         )}
       </div>
 
-      {/* ══ CALENDAR TAB ══ */}
-      {tab==='calendar'&&<>
+      {/* ══ CALENDAR TAB (mode single seulement) ══ */}
+      {layout==='single'&&tab==='calendar'&&<>
 
         {/* Filter bar */}
         <div style={{padding:'12px 48px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const,background:'rgba(255,255,255,.015)'}}>
@@ -464,8 +461,8 @@ export function CalendarPanel() {
         </div>
       </>}
 
-      {/* ══ NEWS TAB ══ */}
-      {tab==='news'&&<>
+      {/* ══ NEWS TAB (mode single seulement) ══ */}
+      {layout==='single'&&tab==='news'&&<>
 
         {/* Filter bar */}
         <div style={{padding:'12px 48px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const,background:'rgba(255,255,255,.015)'}}>
