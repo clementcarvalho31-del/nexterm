@@ -195,7 +195,7 @@ function ForecastBar({ low, mid, high, actual, previous }: { low?:string; mid?:s
         {ap !== null && <div style={{position:'absolute',top:-4,width:3,height:16,background:'#22c55e',borderRadius:2,left:`${ap}%`,transform:'translateX(-50%)',boxShadow:'0 0 4px rgba(34,197,94,.6)'}} title={`Actual: ${actual}`}/>}
       </div>
       <div style={{display:'grid',gridTemplateColumns:actual?'1fr 1fr 1fr 1fr':'1fr 1fr 1fr',gap:6}}>
-        {[['LOW',low,'#ef4444'],['FORE',mid,'#f0b429'],actual?['ACTUAL',actual,'#22c55e']:null,['HIGH',high,'#22c55e']].filter(Boolean).map(([l,v,c])=>(
+        {([['LOW',low,'#ef4444'],['FORE',mid,'#f0b429'],actual?['ACTUAL',actual,'#22c55e']:null,['HIGH',high,'#22c55e']] as (string[]|null)[]).filter((x): x is string[] => x !== null).map(([l,v,c])=>(
           <div key={l as string} style={{textAlign:'center',padding:'5px 6px',background:'rgba(255,255,255,.02)',borderRadius:4,border:'0.5px solid rgba(255,255,255,.04)'}}>
             <div style={{fontSize:8,color:'#3d5060',letterSpacing:'0.4px',marginBottom:2}}>{l}</div>
             <div style={{fontSize:11,fontWeight:700,color:c as string,fontFamily:'IBM Plex Mono,monospace'}}>{v}</div>
