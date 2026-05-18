@@ -20,6 +20,14 @@ interface NewsItem {
 const FLAGS: Record<string,string> = { USD:'🇺🇸',EUR:'🇪🇺',GBP:'🇬🇧',JPY:'🇯🇵',CAD:'🇨🇦',AUD:'🇦🇺',NZD:'🇳🇿',CHF:'🇨🇭',CNY:'🇨🇳' }
 const IMPACT_MAP: Record<string,ImpactLevel> = { 'High Impact Expected':'high','Medium Impact Expected':'med','Low Impact Expected':'low','Non-Economic':'low' }
 
+function getImpactLevel(impact: string): ImpactLevel {
+  if (!impact) return 'low'
+  const i = impact.toLowerCase()
+  if (i.includes('high')) return 'high'
+  if (i.includes('medium') || i.includes('moderate')) return 'med'
+  return 'low'
+}
+
 function forecastRange(forecast: string) {
   if (!forecast) return null
   const val = parseFloat(forecast.replace(/[^0-9.-]/g,''))
@@ -31,7 +39,7 @@ function forecastRange(forecast: string) {
 }
 function enrichEvent(e: RawFFEvent, i: number): CalEvent {
   const r = forecastRange(e.forecast)
-  return { ...e, id:`ev-${i}`, flag:FLAGS[e.country]||'🌐', impactLevel:IMPACT_MAP[e.impact]||'low', forecastLow:r?.low, forecastHigh:r?.high }
+  return { ...e, id:`ev-${i}`, flag:FLAGS[e.country]||'🌐', impactLevel:getImpactLevel(e.impact), forecastLow:r?.low, forecastHigh:r?.high }
 }
 function groupByDay(events: CalEvent[]): [string,CalEvent[]][] {
   const map = new Map<string,CalEvent[]>()
