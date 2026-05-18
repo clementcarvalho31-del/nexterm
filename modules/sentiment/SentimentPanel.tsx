@@ -372,6 +372,24 @@ export function SentimentPanel() {
   const [lastUpd,setLastUpd]       = useState('')
   const [tab,setTab]               = useState<'sentiment'|'seasonality'>('sentiment')
   const [layout,setLayout]         = useState<'single'|'split'>('single')
+  const [splitLeft,setSplitLeft]   = useState(50)
+  const isDragging                 = useRef(false)
+  const containerRef               = useRef<HTMLDivElement>(null)
+
+  const onDragStart = () => { isDragging.current = true }
+  const onDragMove  = useCallback((e: MouseEvent) => {
+    if (!isDragging.current || !containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const pct  = ((e.clientX - rect.left) / rect.width) * 100
+    setSplitLeft(Math.min(75, Math.max(25, pct)))
+  }, [])
+  const onDragEnd   = () => { isDragging.current = false }
+
+  useEffect(() => {
+    window.addEventListener('mousemove', onDragMove)
+    window.addEventListener('mouseup', onDragEnd)
+    return () => { window.removeEventListener('mousemove', onDragMove); window.removeEventListener('mouseup', onDragEnd) }
+  }, [onDragMove])
   const [modal,setModal]           = useState<SentimentData|null>(null)
 
   // Widget states
@@ -409,7 +427,7 @@ export function SentimentPanel() {
   })
 
   return (
-    <div style={{height:'100%',display:'flex',flexDirection:'column',background:'#050810',fontFamily:"'Inter',-apple-system,sans-serif",overflow:'hidden'}}>
+    <div ref={containerRef} style={{height:'100%',display:'flex',flexDirection:'column',background:'#050810',fontFamily:"'Inter',-apple-system,sans-serif",overflow:'hidden'}}>
       {modal&&<DetailModal d={modal} onClose={()=>setModal(null)}/>}
 
       {/* ── HEADER ── */}
@@ -457,7 +475,8 @@ export function SentimentPanel() {
       {/* ══ SPLIT ══ */}
       {layout==='split'&&(
         <div style={{flex:1,display:'flex',minHeight:0,overflow:'hidden'}}>
-          <div style={{flex:1,display:'flex',flexDirection:'column' as const,borderRight:'1px solid rgba(255,255,255,.05)',overflow:'hidden'}}>
+          {/* Left — Sentiment */}
+          <div style={{width:`${splitLeft}%`,flexShrink:0,display:'flex',flexDirection:'column' as const,overflow:'hidden'}}>
             <div style={{padding:'6px 20px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0}}>
               <span style={{fontSize:8,fontWeight:700,letterSpacing:'1.5px',color:'#2a3a4a',textTransform:'uppercase' as const}}>👥 Sentiment Retail</span>
             </div>
@@ -489,7 +508,16 @@ export function SentimentPanel() {
               })}
             </div>
           </div>
-          <div style={{flex:1,display:'flex',flexDirection:'column' as const,overflow:'hidden'}}>
+
+          {/* Draggable divider */}
+          <div onMouseDown={onDragStart} style={{width:5,flexShrink:0,cursor:'col-resize',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 150ms',userSelect:'none' as const}}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(167,139,250,.15)'}
+            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+            <div style={{width:1,height:40,background:'rgba(167,139,250,.3)',borderRadius:1}}/>
+          </div>
+
+          {/* Right — Seasonality */}
+          <div style={{flex:1,display:'flex',flexDirection:'column' as const,overflow:'hidden',minWidth:0}}>
             <div style={{padding:'6px 16px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const}}>
               <span style={{fontSize:8,fontWeight:700,letterSpacing:'1.5px',color:'#2a3a4a',textTransform:'uppercase' as const}}>📈 Saisonnalité</span>
               <div style={{flex:1}}/>
