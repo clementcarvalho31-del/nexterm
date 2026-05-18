@@ -9,19 +9,31 @@ import { Workspace }         from '@/layouts/Workspace'
 import { NewsFeedPanel }     from '@/modules/news/NewsFeedPanel'
 import { RightSidebar }      from '@/modules/news/RightSidebar'
 import { CalendarPanel }     from '@/modules/calendar/CalendarPanel'
+import { SentimentPanel }    from '@/modules/sentiment/SentimentPanel'
 import { useTerminalStore }  from '@/store/terminal'
 
 function TerminalInner() {
   useRealtimeMarket()
   const activeTab = useTerminalStore(s => s.activeTab)
 
-  // Calendar = full screen, no sidebars
+  // Full screen modules
   if (activeTab === 'calendar') {
     return (
       <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--t-surface-base)', color:'var(--t-text-primary)', fontFamily:'var(--t-font-sans)' }}>
         <TopBar />
         <div style={{ flex:1, minHeight:0, overflow:'hidden' }}>
           <CalendarPanel />
+        </div>
+      </div>
+    )
+  }
+
+  if (activeTab === 'cot') {
+    return (
+      <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--t-surface-base)', color:'var(--t-text-primary)', fontFamily:'var(--t-font-sans)' }}>
+        <TopBar />
+        <div style={{ flex:1, minHeight:0, overflow:'hidden' }}>
+          <SentimentPanel />
         </div>
       </div>
     )
