@@ -253,11 +253,15 @@ function EventRow({ event, selected, onSelect }: { event:CalEvent; selected:bool
         onMouseEnter={e=>{if(!selected)(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,.02)'}}
         onMouseLeave={e=>{if(!selected)(e.currentTarget as HTMLElement).style.background=isSoon?'rgba(239,68,68,.02)':'transparent'}}>
 
-        {/* Stars */}
-        <span style={{fontSize:10,letterSpacing:1,width:32,flexShrink:0,color:event.impactLevel==='high'?'#ef4444':event.impactLevel==='med'?'#f0b429':'#374151'}}>{event.impactLevel==='high'?'★★★':event.impactLevel==='med'?'★★☆':'★☆☆'}</span>
+        {/* Stars importance */}
+        <span style={{fontSize:10,letterSpacing:1,width:32,flexShrink:0,color:event.impactLevel==='high'?'#ef4444':event.impactLevel==='med'?'#f0b429':'#374151'}}>
+          {event.impactLevel==='high'?'★★★':event.impactLevel==='med'?'★★☆':'★☆☆'}
+        </span>
 
         {/* Time */}
-        <span style={{fontSize:10,color:isSoon?'#f0b429':'#8a9db5',width:44,flexShrink:0,fontFamily:'IBM Plex Mono,monospace',fontWeight:isSoon?700:500}}>{event.time?.toLowerCase().replace(' ','') || '—'}</span>
+        <span style={{fontSize:10,color:isSoon?'#f0b429':'#8a9db5',width:44,flexShrink:0,fontFamily:'IBM Plex Mono,monospace',fontWeight:isSoon?700:500}}>
+          {event.time?.toLowerCase().replace(' ','') || '—'}
+        </span>
 
         {/* Flag */}
         <span style={{fontSize:13,width:20,flexShrink:0,lineHeight:1}}>{event.flag}</span>
@@ -330,7 +334,7 @@ export function CalendarPanel() {
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState(false)
   const [selectedId, setSelectedId]   = useState<string|null>(null)
-  const [impact, setImpact]           = useState<'all'|ImpactLevel>('all')
+  const [stars, setStars]             = useState<Set<ImpactLevel>>(new Set(['high','med','low']))
   const [currency, setCurrency]       = useState('ALL')
   const [search, setSearch]           = useState('')
   const [range, setRange]             = useState<'today'|'week'>('week')
@@ -362,7 +366,7 @@ export function CalendarPanel() {
   }, [fetchData])
 
   const filtered = events.filter(e => {
-    if (impact !== 'all' && e.impactLevel !== impact) return false
+    if (stars.size > 0 && !stars.has(e.impactLevel)) return false
     if (currency !== 'ALL' && e.country !== currency) return false
     if (search && !e.title.toLowerCase().includes(search.toLowerCase()) && !e.country.toLowerCase().includes(search.toLowerCase())) return false
     if (range === 'today') {
@@ -414,13 +418,35 @@ export function CalendarPanel() {
           <button onClick={fetchData} style={{padding:'3px 8px',borderRadius:3,fontSize:10,cursor:'pointer',border:'0.5px solid rgba(255,255,255,.07)',background:'transparent',color:'#3d5060',transition:'color 100ms'}} onMouseEnter={e=>e.currentTarget.style.color='#8a9db5'} onMouseLeave={e=>e.currentTarget.style.color='#3d5060'}>↻</button>
         </div>
 
-        {/* Row 3: impact + currency filters */}
-        <div style={{display:'flex',gap:3,flexWrap:'wrap',alignItems:'center'}}>
-          {(['all','high','med','low'] as const).map(i=>{
-            const col = i==='high'?'rgba(239,68,68,1)':i==='med'?'rgba(240,180,41,1)':i==='low'?'rgba(100,116,139,1)':'rgba(200,214,229,1)'
-            return <button key={i} onClick={()=>setImpact(i)} style={btnStyle(impact===i,col)}>{i.toUpperCase()}</button>
+        {/* Row 3: star checkboxes + currency filters */}
+        <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
+          {/* Star checkboxes */}
+          {([
+            {level:'high' as ImpactLevel, stars:'★★★', label:'HIGH', color:'#ef4444', bg:'rgba(239,68,68,.12)', border:'rgba(239,68,68,.35)'},
+            {level:'med'  as ImpactLevel, stars:'★★☆', label:'MED',  color:'#f0b429', bg:'rgba(240,180,41,.1)',  border:'rgba(240,180,41,.35)'},
+            {level:'low'  as ImpactLevel, stars:'★☆☆', label:'LOW',  color:'#64748b', bg:'rgba(100,116,139,.1)', border:'rgba(100,116,139,.3)'},
+          ]).map(({level,stars:s,label,color,bg,border}) => {
+            const checked = stars.has(level)
+            const toggle = () => {
+              const next = new Set(stars)
+              if (checked) next.delete(level); else next.add(level)
+              setStars(next)
+            }
+            return (
+              <div key={level} onClick={toggle} style={{display:'flex',alignItems:'center',gap:5,padding:'4px 10px',borderRadius:4,cursor:'pointer',background:checked?bg:'transparent',border:`0.5px solid ${checked?border:'rgba(255,255,255,.07)'}`,transition:'all 120ms',userSelect:'none'}}>
+                {/* Checkbox */}
+                <div style={{width:13,height:13,borderRadius:3,border:`1.5px solid ${checked?color:'rgba(255,255,255,.2)'}`,background:checked?color:'transparent',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 120ms',flexShrink:0}}>
+                  {checked && <span style={{fontSize:8,color:'#000',fontWeight:900,lineHeight:1}}>✓</span>}
+                </div>
+                <span style={{fontSize:10,letterSpacing:1,color:checked?color:'#3d5060'}}>{s}</span>
+                <span style={{fontSize:9,fontWeight:600,color:checked?color:'#3d5060',letterSpacing:'0.3px'}}>{label}</span>
+              </div>
+            )
           })}
-          <div style={{width:'0.5px',height:14,background:'rgba(255,255,255,.08)',margin:'0 4px'}}/>
+
+          <div style={{width:'0.5px',height:16,background:'rgba(255,255,255,.08)',margin:'0 2px'}}/>
+
+          {/* Currency filter */}
           {CURRENCIES.map(c=>(
             <button key={c} onClick={()=>setCurrency(c)} style={btnStyle(currency===c)}>{c}</button>
           ))}
@@ -429,7 +455,8 @@ export function CalendarPanel() {
         {/* Column headers */}
         <div style={{display:'flex',alignItems:'center',gap:8,padding:'5px 14px 0',paddingLeft:22,marginTop:6,borderTop:'0.5px solid rgba(255,255,255,.04)'}}>
           <span style={{width:6,flexShrink:0}}/>
-          <span style={{fontSize:7,color:'#2d3f50',width:36,letterSpacing:'0.4px',textTransform:'uppercase'}}>Time ET</span>
+          <span style={{fontSize:7,color:'#2d3f50',width:32,letterSpacing:'0.4px',textTransform:'uppercase'}}>★</span>
+          <span style={{fontSize:7,color:'#2d3f50',width:44,letterSpacing:'0.4px',textTransform:'uppercase'}}>Time ET</span>
           <span style={{width:20,flexShrink:0}}/>
           <span style={{width:30,flexShrink:0}}/>
           <span style={{fontSize:7,color:'#2d3f50',flex:1,letterSpacing:'0.4px',textTransform:'uppercase'}}>Event</span>
