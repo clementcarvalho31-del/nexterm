@@ -34,7 +34,7 @@ export default function SignupPage() {
       <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between', padding:'40px 48px', background:'rgba(240,180,41,.03)', borderRight:'0.5px solid rgba(255,255,255,.06)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:9 }}>
           <div style={{ width:28, height:28, background:'linear-gradient(135deg,#f0b429,#d4780a)', borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#000' }}>N</div>
-          <span style={{ fontWeight:700, fontSize:15, color:'#f0f4f8', letterSpacing:'-0.3px' }}>Nexterm</span>
+          <span style={{ fontWeight:700, fontSize:15, color:'#f0f4f8', letterSpacing:'-0.3px' }}>PrimeMarket</span>
         </div>
 
         <div>

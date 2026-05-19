@@ -40,7 +40,7 @@ export function TopBar() {
         }}>N</div>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--t-text-heading)', letterSpacing: '-0.4px', lineHeight: 1.1, fontFamily: 'var(--t-font-sans)' }}>
-            Nexterm
+            PrimeMarket
           </div>
           <div style={{ fontSize: 8, fontWeight: 600, color: 'rgba(240,180,41,.5)', letterSpacing: '1.8px', fontFamily: 'var(--t-font-mono)' }}>
             INSTITUTIONAL FX

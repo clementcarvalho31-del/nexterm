@@ -42,7 +42,7 @@ export const useTerminalStore = create<TerminalStore>((set, get) => ({
     const next = !get().squawkEnabled
     set({ squawkEnabled: next })
     if (next && typeof window !== 'undefined' && window.speechSynthesis) {
-      const u = new SpeechSynthesisUtterance('Nexterm squawk activated.')
+      const u = new SpeechSynthesisUtterance('PrimeMarket squawk activated.')
       u.rate = 1.05
       window.speechSynthesis.speak(u)
     }

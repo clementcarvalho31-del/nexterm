@@ -149,7 +149,7 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div style={{ width:34, height:34, background:'linear-gradient(135deg,#f0b429,#d4780a)', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:800, color:'#000', boxShadow:'0 2px 14px rgba(240,180,41,.3)' }}>N</div>
           <div>
-            <div style={{ fontSize:15, fontWeight:800, color:'#f0f4f8', letterSpacing:'-.3px', lineHeight:1.2 }}>Nexterm</div>
+            <div style={{ fontSize:15, fontWeight:800, color:'#f0f4f8', letterSpacing:'-.3px', lineHeight:1.2 }}>PrimeMarket</div>
             <div style={{ fontSize:9, color:'#3d5060', letterSpacing:'.8px' }}>INSTITUTIONAL FX</div>
           </div>
         </div>
@@ -176,7 +176,7 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
           <div style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? 'translateY(0)' : 'translateY(16px)', transition:'opacity 0.7s cubic-bezier(.22,1,.36,1) 0s, transform 0.7s cubic-bezier(.22,1,.36,1) 0s' }}>
             <div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'5px 14px 5px 10px', borderRadius:100, background:'rgba(240,180,41,.09)', border:'0.5px solid rgba(240,180,41,.22)', marginBottom:28 }}>
               <span style={{ width:6, height:6, borderRadius:'50%', background:'#f0b429', display:'inline-block', animation:'t-pulse 2s ease-in-out infinite' }}/>
-              <span style={{ fontSize:11, color:'#f0b429', fontWeight:600, letterSpacing:'.5px' }}>INSTITUTIONAL FX TERMINAL</span>
+              <span style={{ fontSize:11, color:'#f0b429', fontWeight:600, letterSpacing:'.5px' }}>INSTITUTIONAL TRADING PLATFORM</span>
             </div>
           </div>
 
@@ -252,7 +252,7 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
           </section>
         </Reveal>
 
-        {/* ── Why Nexterm ── */}
+        {/* ── Why PrimeMarket ── */}
         <Reveal delay={0}>
           <section style={{ padding:'60px 5vw 80px', maxWidth:1080, margin:'0 auto', borderTop:'0.5px solid rgba(255,255,255,.05)' }}>
             <div style={{ textAlign:'center', marginBottom:48 }}>
@@ -311,7 +311,7 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
         <footer style={{ padding:'28px 5vw', borderTop:'0.5px solid rgba(255,255,255,.05)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:22, height:22, background:'linear-gradient(135deg,#f0b429,#d4780a)', borderRadius:5, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:800, color:'#000' }}>N</div>
-            <span style={{ fontSize:11, color:'#2d3f50' }}>© 2025 Nexterm. All rights reserved.</span>
+            <span style={{ fontSize:11, color:'#2d3f50' }}>© 2025 PrimeMarket. All rights reserved.</span>
           </div>
           <div style={{ display:'flex', gap:16 }}>
             {['Privacy','Terms','Contact'].map(l => (
