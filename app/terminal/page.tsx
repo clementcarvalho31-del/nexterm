@@ -260,27 +260,6 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
           </div>
         </section>
 
-        {/* ── Secondary nav ── */}
-        <Reveal delay={0}>
-          <section style={{ padding:'0 5vw 60px', display:'flex', flexDirection:'column', alignItems:'center', gap:14 }}>
-            <div style={{ fontSize:9, fontWeight:700, letterSpacing:'1.5px', color:'#2d3f50', textTransform:'uppercase' }}>
-              {lang === 'fr' ? 'Accès rapide' : 'Quick access'}
-            </div>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:8, justifyContent:'center' }}>
-              {SECONDARY.map(item => (
-                <button key={item.tab} onClick={() => onEnter(item.tab)} style={{ padding:'7px 16px', borderRadius:7, fontSize:11, fontWeight:500, color:'#4a5e72', background:'transparent', border:'0.5px solid rgba(255,255,255,.08)', cursor:'pointer', transition:'all 150ms', fontFamily:'inherit' }}
-                  onMouseEnter={e => { e.currentTarget.style.color='#c8d6e5'; e.currentTarget.style.borderColor='rgba(255,255,255,.18)'; e.currentTarget.style.background='rgba(255,255,255,.04)' }}
-                  onMouseLeave={e => { e.currentTarget.style.color='#4a5e72'; e.currentTarget.style.borderColor='rgba(255,255,255,.08)'; e.currentTarget.style.background='transparent' }}>
-                  {item[lang]}
-                </button>
-              ))}
-            </div>
-            <p style={{ fontSize:10, color:'#1e2c3a', marginTop:4 }}>
-              {lang === 'fr' ? 'Aucune carte requise · Essai 3 jours · Données live' : 'No credit card required · 3-day free trial · All data live'}
-            </p>
-          </section>
-        </Reveal>
-
         {/* ── Why PrimeMarket ── */}
         <Reveal delay={0}>
           <section style={{ padding:'60px 5vw 80px', textAlign:'center' }}>
@@ -299,6 +278,27 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
                 {lang==='fr' ? 'Ouvrir le terminal →' : 'Open terminal →'}
               </button>
             </div>
+          </section>
+        </Reveal>
+
+        {/* ── Secondary nav ── */}
+        <Reveal delay={0}>
+          <section style={{ padding:'0 5vw 60px', display:'flex', flexDirection:'column', alignItems:'center', gap:14 }}>
+            <div style={{ fontSize:9, fontWeight:700, letterSpacing:'1.5px', color:'#2d3f50', textTransform:'uppercase' }}>
+              {lang === 'fr' ? 'Accès rapide' : 'Quick access'}
+            </div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8, justifyContent:'center' }}>
+              {SECONDARY.map(item => (
+                <button key={item.tab} onClick={() => onEnter(item.tab)} style={{ padding:'7px 16px', borderRadius:7, fontSize:11, fontWeight:500, color:'#4a5e72', background:'transparent', border:'0.5px solid rgba(255,255,255,.08)', cursor:'pointer', transition:'all 150ms', fontFamily:'inherit' }}
+                  onMouseEnter={e => { e.currentTarget.style.color='#c8d6e5'; e.currentTarget.style.borderColor='rgba(255,255,255,.18)'; e.currentTarget.style.background='rgba(255,255,255,.04)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color='#4a5e72'; e.currentTarget.style.borderColor='rgba(255,255,255,.08)'; e.currentTarget.style.background='transparent' }}>
+                  {item[lang]}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize:10, color:'#1e2c3a', marginTop:4 }}>
+              {lang === 'fr' ? 'Aucune carte requise · Essai 3 jours · Données live' : 'No credit card required · 3-day free trial · All data live'}
+            </p>
           </section>
         </Reveal>
 
