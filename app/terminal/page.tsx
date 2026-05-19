@@ -95,7 +95,7 @@ function ModuleCard({ m, delay, onEnter, lang }: { m:any; delay:number; onEnter:
       </div>
       <div style={{ fontSize:10, color:'#3d5060', lineHeight:1.55, marginBottom:16, flex:1 }}>{m.detail}</div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:14, borderTop:`0.5px solid ${hov ? m.border : 'rgba(255,255,255,.05)'}`, transition:'border-color 200ms' }}>
-        <span style={{ fontSize:11, fontWeight:600, color: hov ? m.color : '#5a7080', transition:'color 200ms' }}>{open}</span>
+        <span style={{ fontSize:12, fontWeight:700, color: hov ? m.color : '#8a9db5', transition:'color 200ms' }}>{open}</span>
         <span style={{ fontSize:14, color: hov ? m.color : '#3d5060', transition:'all 200ms', transform: hov ? 'translateX(4px)' : 'none' }}>→</span>
       </div>
     </div>
