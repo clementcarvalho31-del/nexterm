@@ -204,6 +204,29 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
           </div>
         </section>
 
+        {/* ── CTA strip ── */}
+        {/* ── Modules grid ── */}
+        <section style={{ padding:'0 5vw 70px', maxWidth:1120, margin:'0 auto' }}>
+
+          <Reveal delay={0}>
+            <div style={{ textAlign:'center', marginBottom:36 }}>
+              <div style={{ fontSize:10, fontWeight:700, letterSpacing:'2px', color:'#3d5060', marginBottom:14, textTransform:'uppercase' }}>
+                {lang === 'fr' ? 'Modules disponibles' : 'Available modules'}
+              </div>
+              <h2 style={{ fontSize:'clamp(26px,3.5vw,40px)', fontWeight:800, color:'#f0f4f8', letterSpacing:'-1px', margin:0 }}>
+                {lang === 'fr' ? 'Tout ce dont un trader institutionnel a besoin' : 'Everything an institutional trader needs'}
+              </h2>
+            </div>
+          </Reveal>
+
+          {/* 2x2 optimised grid */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gridTemplateRows:'auto auto', gap:16 }}>
+            {modules.map((m, i) => (
+              <ModuleCard key={m.id} m={m} delay={i * 0.07} onEnter={onEnter} lang={lang} />
+            ))}
+          </div>
+        </section>
+
         <Reveal delay={0}>
           <section style={{ padding:'60px 5vw 80px', maxWidth:1080, margin:'0 auto', borderTop:'0.5px solid rgba(255,255,255,.05)' }}>
             <div style={{ textAlign:'center', marginBottom:48 }}>
@@ -236,29 +259,6 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
             </div>
           </section>
         </Reveal>
-
-        {/* ── CTA strip ── */}
-        {/* ── Modules grid ── */}
-        <section style={{ padding:'0 5vw 70px', maxWidth:1120, margin:'0 auto' }}>
-
-          <Reveal delay={0}>
-            <div style={{ textAlign:'center', marginBottom:36 }}>
-              <div style={{ fontSize:10, fontWeight:700, letterSpacing:'2px', color:'#3d5060', marginBottom:14, textTransform:'uppercase' }}>
-                {lang === 'fr' ? 'Modules disponibles' : 'Available modules'}
-              </div>
-              <h2 style={{ fontSize:'clamp(26px,3.5vw,40px)', fontWeight:800, color:'#f0f4f8', letterSpacing:'-1px', margin:0 }}>
-                {lang === 'fr' ? 'Tout ce dont un trader institutionnel a besoin' : 'Everything an institutional trader needs'}
-              </h2>
-            </div>
-          </Reveal>
-
-          {/* 2x2 optimised grid */}
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gridTemplateRows:'auto auto', gap:16 }}>
-            {modules.map((m, i) => (
-              <ModuleCard key={m.id} m={m} delay={i * 0.07} onEnter={onEnter} lang={lang} />
-            ))}
-          </div>
-        </section>
 
         {/* ── Secondary nav ── */}
         <Reveal delay={0}>
