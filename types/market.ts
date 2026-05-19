@@ -229,6 +229,7 @@ export type TabId =
   | 'flows'
   | 'copilot'
   | 'livefeed'
+  | 'trackrecord'
 
 export interface Tab {
   id: TabId
