@@ -1,82 +1,150 @@
 'use client'
 import { useTerminalStore } from '@/store/terminal'
-import { ThemeSwitcher } from '@/src/design-system/themes/ThemeSwitcher'
-import type { TabId } from '@/src/types'
+import { useState } from 'react'
+
+const NAV = [
+  { id: 'dashboard',   label: 'Trading' },
+  { id: 'calendar',    label: 'Calendar',   dot: 'red' },
+  { id: 'cot',         label: 'Research' },
+  { id: 'worldbook',   label: 'Worldbook' },
+  { id: 'newsplay',    label: 'Event Trades' },
+] as const
 
 export function TopBar() {
-  const utcTime        = useTerminalStore(s => s.utcTime)
-  const status         = useTerminalStore(s => s.status)
-  const setCommandOpen = useTerminalStore(s => s.setCommandOpen)
-  const activeTab      = useTerminalStore(s => s.activeTab)
-  const setActiveTab   = useTerminalStore(s => s.setActiveTab)
-
-  const isLive = status === 'connected'
-  const isConn = status === 'connecting'
+  const utcTime    = useTerminalStore(s => s.utcTime)
+  const activeTab  = useTerminalStore(s => s.activeTab)
+  const setTab     = useTerminalStore(s => s.setActiveTab)
+  const [hover, setHover] = useState<string|null>(null)
 
   return (
-    <header style={{ display:'flex', alignItems:'center', justifyContent:'space-between', height:48, padding:'0 16px', flexShrink:0, background:'var(--t-surface-elevated)', borderBottom:'0.5px solid var(--t-border-default)', gap:16 }}>
+    <header style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      height: 40, padding: '0 16px', flexShrink: 0,
+      background: 'linear-gradient(180deg, #070b15 0%, #060912 100%)',
+      borderBottom: '1px solid rgba(255,255,255,.055)',
+      position: 'relative', zIndex: 100,
+    }}>
 
-      {/* Logo — cliquable pour retourner à l'accueil */}
-      <div style={{ display:'flex', alignItems:'center', gap:9, flexShrink:0 }}>
-        <div style={{ width:28, height:28, background:'linear-gradient(135deg,var(--t-accent-primary) 0%,#d4780a 100%)', borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#000', fontFamily:'var(--t-font-sans)', boxShadow:'0 2px 8px rgba(240,180,41,.25)', flexShrink:0 }}>N</div>
-        <span style={{ fontFamily:'var(--t-font-sans)', fontWeight:700, fontSize:15, letterSpacing:'-0.4px', color:'var(--t-text-heading)' }}>Nexterm</span>
+      {/* Logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 26, height: 26,
+            background: 'linear-gradient(135deg, #f0b429 0%, #c97d10 100%)',
+            borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 12, fontWeight: 800, color: '#000',
+            boxShadow: '0 2px 12px rgba(240,180,41,.25), inset 0 1px 0 rgba(255,255,255,.3)',
+            fontFamily: 'var(--font-sans)',
+          }}>N</div>
+          <span style={{
+            fontSize: 13, fontWeight: 700, color: '#f0f4f8',
+            letterSpacing: '-0.3px', fontFamily: 'var(--font-sans)',
+          }}>Nexterm</span>
+          <span style={{
+            fontSize: 8, fontWeight: 600, color: 'rgba(240,180,41,.6)',
+            letterSpacing: '1.5px', fontFamily: 'var(--font-mono)',
+            padding: '1px 5px', background: 'rgba(240,180,41,.06)',
+            border: '0.5px solid rgba(240,180,41,.15)', borderRadius: 2,
+          }}>INSTITUTIONAL FX</span>
+        </div>
+
+        {/* Nav */}
+        <nav style={{ display: 'flex', gap: 1 }}>
+          {NAV.map(item => {
+            const isActive = activeTab === item.id
+            const isHover  = hover === item.id
+            return (
+              <button
+                key={item.id}
+                onClick={() => setTab(item.id as any)}
+                onMouseEnter={() => setHover(item.id)}
+                onMouseLeave={() => setHover(null)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '0 12px', height: 40,
+                  background: 'transparent', border: 'none',
+                  borderBottom: isActive ? '1.5px solid #f0b429' : '1.5px solid transparent',
+                  color: isActive ? '#f0f4f8' : isHover ? '#c8d6e5' : '#4a5e72',
+                  fontSize: 11, fontWeight: isActive ? 600 : 400,
+                  fontFamily: 'var(--font-sans)', cursor: 'pointer',
+                  transition: 'all 150ms ease', letterSpacing: '-0.1px',
+                }}
+              >
+                {item.dot === 'red' && (
+                  <span style={{
+                    width: 4, height: 4, borderRadius: '50%', background: '#ef4444',
+                    display: 'inline-block', boxShadow: '0 0 5px rgba(239,68,68,.7)',
+                    animation: 'pulse-live 2s ease-in-out infinite',
+                  }} />
+                )}
+                {item.label}
+              </button>
+            )
+          })}
+        </nav>
       </div>
 
-      {/* Nav — seulement Home + Calendar */}
-      <nav style={{ display:'flex', alignItems:'center', gap:2, flex:1 }}>
+      {/* Right side */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
 
-        {/* Bouton Home */}
-        <button
-          onClick={() => { if (typeof window !== 'undefined') window.location.reload() }}
-          style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:5, fontSize:13, fontFamily:'var(--t-font-sans)', fontWeight:400, color:'var(--t-text-muted)', background:'transparent', border:'none', cursor:'pointer', transition:'all 120ms' }}
-          title="Retour à l'accueil"
-          onMouseEnter={e=>e.currentTarget.style.color='var(--t-text-secondary)'}
-          onMouseLeave={e=>e.currentTarget.style.color='var(--t-text-muted)'}>
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M1 6.5L7 1.5L13 6.5V12.5H9V9H5V12.5H1V6.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
-          Accueil
-        </button>
-
-        {/* Sentiment */}
-        <button
-          onClick={() => setActiveTab('cot')}
-          style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:5, fontSize:13, fontFamily:'var(--t-font-sans)', fontWeight:activeTab==='cot'?600:400, color:activeTab==='cot'?'#a78bfa':'var(--t-text-muted)', background:activeTab==='cot'?'rgba(167,139,250,.08)':'transparent', border:activeTab==='cot'?'0.5px solid rgba(167,139,250,.2)':'0.5px solid transparent', cursor:'pointer', transition:'all 120ms' }}
-          onMouseEnter={e=>{ if(activeTab!=='cot') e.currentTarget.style.color='var(--t-text-secondary)' }}
-          onMouseLeave={e=>{ if(activeTab!=='cot') e.currentTarget.style.color='var(--t-text-muted)' }}>
-          Sentiment
-        </button>
-        {/* Calendar */}
-        <button
-          onClick={() => setActiveTab('calendar')}
-          style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:5, fontSize:13, fontFamily:'var(--t-font-sans)', fontWeight:activeTab==='calendar'?600:400, color:activeTab==='calendar'?'var(--t-accent-primary)':'var(--t-text-muted)', background:activeTab==='calendar'?'rgba(240,180,41,.08)':'transparent', border:activeTab==='calendar'?'0.5px solid rgba(240,180,41,.2)':'0.5px solid transparent', cursor:'pointer', transition:'all 120ms' }}
-          onMouseEnter={e=>{ if(activeTab!=='calendar') e.currentTarget.style.color='var(--t-text-secondary)' }}
-          onMouseLeave={e=>{ if(activeTab!=='calendar') e.currentTarget.style.color='var(--t-text-muted)' }}>
-          <span style={{ width:5, height:5, borderRadius:'50%', background:'#ef4444', display:'inline-block', animation:'t-pulse 2s ease-in-out infinite', boxShadow:'0 0 4px rgba(239,68,68,.6)' }} />
-          Calendar
-        </button>
-      </nav>
-
-      {/* Right */}
-      <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:5, padding:'4px 9px', borderRadius:5, background:'var(--t-surface-hover)', border:'0.5px solid var(--t-border-default)' }}>
-          <span style={{ width:5, height:5, borderRadius:'50%', background:isLive?'var(--t-status-live)':isConn?'var(--t-status-warning)':'var(--t-status-danger)', display:'inline-block', animation:isLive?'t-pulse 2s ease-in-out infinite':'none', boxShadow:isLive?'0 0 5px var(--t-status-live)':'none' }} />
-          <span style={{ fontSize:10, fontFamily:'var(--t-font-mono)', color:isLive?'var(--t-status-live)':'var(--t-text-muted)', letterSpacing:'0.4px' }}>{isLive?'LIVE':isConn?'SYNC':'OFF'}</span>
+        {/* Search */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: 'rgba(255,255,255,.04)', border: '0.5px solid rgba(255,255,255,.08)',
+          borderRadius: 5, padding: '4px 10px', cursor: 'pointer',
+          transition: 'all 150ms',
+        }}>
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <circle cx="5" cy="5" r="3.5" stroke="#3d5060" strokeWidth="1.2"/>
+            <line x1="7.5" y1="7.5" x2="10" y2="10" stroke="#3d5060" strokeWidth="1.2" strokeLinecap="round"/>
+          </svg>
+          <span style={{ fontSize: 10, color: '#2d3f50', fontFamily: 'var(--font-sans)' }}>Search</span>
+          <kbd style={{
+            fontSize: 8, color: '#1e2c3a', fontFamily: 'var(--font-mono)',
+            background: 'rgba(255,255,255,.04)', padding: '1px 4px', borderRadius: 3,
+          }}>⌘K</kbd>
         </div>
-        <span style={{ fontSize:11, fontFamily:'var(--t-font-mono)', color:'var(--t-text-muted)', letterSpacing:'0.5px', fontVariantNumeric:'tabular-nums' }}>{utcTime}</span>
-        <button onClick={()=>setCommandOpen(true)} style={{ display:'flex', alignItems:'center', gap:7, padding:'5px 11px', borderRadius:5, background:'var(--t-surface-hover)', border:'0.5px solid var(--t-border-default)', color:'var(--t-text-muted)', fontSize:12, fontFamily:'var(--t-font-sans)', cursor:'pointer', transition:'all 120ms' }}
-          onMouseEnter={e=>{ e.currentTarget.style.borderColor='var(--t-border-strong)'; e.currentTarget.style.color='var(--t-text-secondary)' }}
-          onMouseLeave={e=>{ e.currentTarget.style.borderColor='var(--t-border-default)'; e.currentTarget.style.color='var(--t-text-muted)' }}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5.5" cy="5.5" r="3.8" stroke="currentColor" strokeWidth="1.2"/><line x1="8.5" y1="8.5" x2="11" y2="11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
-          <span>Search</span>
-          <kbd style={{ fontSize:9, padding:'1px 4px', background:'var(--t-surface-active)', borderRadius:3, color:'var(--t-text-disabled)', fontFamily:'var(--t-font-mono)' }}>⌘K</kbd>
-        </button>
-        <ThemeSwitcher compact />
-        <div style={{ width:30, height:30, borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#fff', cursor:'pointer', border:'1.5px solid var(--t-border-default)', transition:'border-color 120ms', flexShrink:0 }}
-          onMouseEnter={e=>e.currentTarget.style.borderColor='var(--t-border-focus)'}
-          onMouseLeave={e=>e.currentTarget.style.borderColor='var(--t-border-default)'}>
-          C
+
+        {/* Status */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '3px 8px', borderRadius: 4,
+          background: 'rgba(34,197,94,.05)', border: '0.5px solid rgba(34,197,94,.15)',
+        }}>
+          <span style={{
+            width: 5, height: 5, borderRadius: '50%', background: '#22c55e',
+            display: 'inline-block', animation: 'pulse-live 2s ease-in-out infinite',
+          }} />
+          <span style={{ fontSize: 9, color: '#22c55e', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>LIVE</span>
         </div>
+
+        {/* Time */}
+        <span style={{
+          fontSize: 10, color: '#3d5060', fontFamily: 'var(--font-mono)',
+          letterSpacing: '0.3px', fontVariantNumeric: 'tabular-nums', minWidth: 78,
+        }}>{utcTime}</span>
+
+        {/* Subscribe */}
+        <button style={{
+          padding: '5px 12px', borderRadius: 5, fontSize: 10, fontWeight: 700,
+          background: 'linear-gradient(135deg, #f0b429 0%, #c97d10 100%)',
+          color: '#000', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)',
+          letterSpacing: '0.2px', boxShadow: '0 1px 8px rgba(240,180,41,.2)',
+          transition: 'opacity 150ms',
+        }}
+          onMouseEnter={e => e.currentTarget.style.opacity='0.88'}
+          onMouseLeave={e => e.currentTarget.style.opacity='1'}
+        >Pro — $49/mo</button>
+
+        {/* Avatar */}
+        <div style={{
+          width: 26, height: 26, borderRadius: '50%',
+          background: 'linear-gradient(135deg, #667eea, #764ba2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 10, fontWeight: 700, color: '#fff', cursor: 'pointer',
+          border: '1px solid rgba(255,255,255,.12)',
+        }}>C</div>
       </div>
     </header>
   )
 }
-

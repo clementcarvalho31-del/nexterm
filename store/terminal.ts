@@ -1,53 +1,67 @@
-// Migration shim — stores split into feature modules
-// Market data: src/features/market/store/marketStore.ts  
-// Terminal UI: src/features/terminal/store/terminalUIStore.ts
-
 import { create } from 'zustand'
-import type { TickData, ConnectionStatus, TabId } from '@/src/types'
-import { WORKSPACE_TABS } from '@/lib/data'
+import { PAIRS, WORKSPACE_TABS } from '@/lib/data'
+import { tickPrice } from '@/lib/utils'
+import type { CurrencyPair, TabId } from '@/types'
 
-// ── Legacy unified store (kept for backward compat with older components) ──
-export interface TerminalStore {
-  ticks: Record<string, TickData>
-  selectedSymbol: string
-  setTick: (tick: TickData) => void
-  setSelectedSymbol: (s: string) => void
+interface TerminalState {
+  // Market
+  pairs: CurrencyPair[]
+  selectedPairIndex: number
+  tickPrices: () => void
+  selectPair: (index: number) => void
+
+  // UI
   activeTab: TabId
-  setActiveTab: (t: TabId) => void
-  commandOpen: boolean
-  setCommandOpen: (v: boolean) => void
-  utcTime: string
-  setUtcTime: (t: string) => void
-  status: ConnectionStatus
-  setStatus: (s: ConnectionStatus) => void
+  setActiveTab: (tab: TabId) => void
+
+  // Squawk
   squawkEnabled: boolean
   toggleSquawk: () => void
+
+  // Clock
+  utcTime: string
+  setUtcTime: (t: string) => void
 }
 
-export const useTerminalStore = create<TerminalStore>((set, get) => ({
-  ticks: {},
-  selectedSymbol: 'EUR/USD',
-  setTick: (tick) => set(s => ({ ticks: { ...s.ticks, [tick.symbol]: tick } })),
-  setSelectedSymbol: (s) => set({ selectedSymbol: s }),
+export const useTerminalStore = create<TerminalState>((set, get) => ({
+  pairs: PAIRS.map(p => ({ ...p })),
+  selectedPairIndex: 0,
+
+  tickPrices: () => {
+    set(state => ({
+      pairs: state.pairs.map(p => {
+        const newPrice = tickPrice(p.price, p.pip)
+        const chg = newPrice - PAIRS.find(x => x.name === p.name)!.price
+        return {
+          ...p,
+          price: newPrice,
+          bid: newPrice - p.spread / 2,
+          ask: newPrice + p.spread / 2,
+          change: chg,
+          changePct: (chg / PAIRS.find(x => x.name === p.name)!.price) * 100,
+        }
+      }),
+    }))
+  },
+
+  selectPair: (index) => set({ selectedPairIndex: index }),
+
   activeTab: WORKSPACE_TABS[0].id,
   setActiveTab: (tab) => set({ activeTab: tab }),
-  commandOpen: false,
-  setCommandOpen: (v) => set({ commandOpen: v }),
-  utcTime: '--:--:-- UTC',
-  setUtcTime: (t) => set({ utcTime: t }),
-  status: 'disconnected',
-  setStatus: (s) => set({ status: s }),
+
   squawkEnabled: false,
   toggleSquawk: () => {
     const next = !get().squawkEnabled
     set({ squawkEnabled: next })
     if (next && typeof window !== 'undefined' && window.speechSynthesis) {
-      const u = new SpeechSynthesisUtterance('Nexterm squawk activated.')
+      const u = new SpeechSynthesisUtterance(
+        'Nexterm squawk activated. Federal Reserve Williams speaking. N F P release in two hours. Euro dollar at one point zero eight four.'
+      )
       u.rate = 1.05
       window.speechSynthesis.speak(u)
     }
   },
-}))
 
-// New clean selectors for new components
-export const selectAllTicks = (s: TerminalStore) => s.ticks
+  utcTime: '--:--:-- UTC',
+  setUtcTime: (t) => set({ utcTime: t }),
+}))
