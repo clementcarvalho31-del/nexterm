@@ -601,7 +601,20 @@ export function SentimentPanel() {
             <div key={s.pair} onClick={()=>setModal(s)} style={{display:'grid',gridTemplateColumns:'48px 80px 90px 1fr 60px 70px 64px 60px 64px',alignItems:'center',padding:'9px 16px',borderBottom:`0.5px solid rgba(255,255,255,${isOvercrowded?.06:.03})`,borderLeft:`2px solid ${isOvercrowded?bc2+'50':'rgba(255,255,255,.03)'}`,transition:'background 80ms',cursor:'pointer',background:isOvercrowded?`${bc2}05`:'transparent'}}
               onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,.025)'}
               onMouseLeave={e=>e.currentTarget.style.background=isOvercrowded?`${bc2}05`:'transparent'}>
-              <MiniDonut long={s.longPct} short={s.shortPct}/>
+              {/* Mini donut inline */}
+              {(()=>{
+                const R=14,SW=4,CX=18,CY=18,circ=2*Math.PI*R,gap=0.04*circ
+                const ld=(s.longPct/100)*circ-gap, sd=(s.shortPct/100)*circ-gap
+                return (
+                  <svg width="36" height="36" viewBox="0 0 36 36" style={{flexShrink:0}}>
+                    <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth={SW}/>
+                    <circle cx={CX} cy={CY} r={R} fill="none" stroke="#ef4444" strokeWidth={SW} strokeLinecap="round"
+                      strokeDasharray={`${sd} ${circ-sd}`} strokeDashoffset={circ/4}/>
+                    <circle cx={CX} cy={CY} r={R} fill="none" stroke="#22c55e" strokeWidth={SW} strokeLinecap="round"
+                      strokeDasharray={`${ld} ${circ-ld}`} strokeDashoffset={circ/4-(s.shortPct/100)*circ}/>
+                  </svg>
+                )
+              })()}
               <span style={{fontSize:12,fontWeight:700,color:'#eef2f7',fontFamily:'IBM Plex Mono,monospace'}}>{s.pair}</span>
               <div style={{display:'flex',alignItems:'center',gap:4}}>
                 <span style={{fontSize:8,fontWeight:800,padding:'2px 6px',borderRadius:3,background:`${bc2}12`,color:bc2,border:`0.5px solid ${bc2}28`,letterSpacing:'.5px'}}>{iB?'▲ LONG':iS?'▼ SHORT':'→'}</span>
