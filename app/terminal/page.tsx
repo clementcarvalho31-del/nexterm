@@ -68,13 +68,13 @@ function ModuleCard({ m, delay, onEnter, lang }: { m:any; delay:number; onEnter:
       onMouseLeave={() => setHov(false)}
       style={{
         opacity:    visible ? 1 : 0,
-        transition: `opacity 0.6s cubic-bezier(.22,1,.36,1) ${delay}s, transform 0.6s cubic-bezier(.22,1,.36,1) ${delay}s, box-shadow 200ms, border-color 200ms, background 200ms`,
-        padding: '26px 22px', borderRadius:16, cursor:'pointer',
-        background: hov ? m.bg : 'rgba(255,255,255,.025)',
-        border:     `1px solid ${hov ? m.border : 'rgba(255,255,255,.07)'}`,
-        boxShadow:  hov ? `0 20px 60px ${m.glow}, 0 0 0 1px ${m.border}` : '0 2px 20px rgba(0,0,0,.4)',
-        transform:  hov ? 'translateY(-6px) scale(1.005)' : (visible ? 'translateY(0)' : 'translateY(32px) scale(.97)'),
-        display:'flex', flexDirection:'column',
+        transition: `opacity 0.55s cubic-bezier(.22,1,.36,1) ${delay}s, transform 0.55s cubic-bezier(.22,1,.36,1) ${delay}s, box-shadow 180ms, border-color 180ms, background 180ms`,
+        padding: '22px 20px', borderRadius:14, cursor:'pointer',
+        background: hov ? m.bg : 'rgba(255,255,255,.022)',
+        border:     `1px solid ${hov ? m.border : 'rgba(255,255,255,.08)'}`,
+        boxShadow:  hov ? `0 16px 48px ${m.glow}, 0 0 0 1px ${m.border}` : '0 1px 12px rgba(0,0,0,.35)',
+        transform:  hov ? 'translateY(-5px) scale(1.004)' : (visible ? 'translateY(0)' : 'translateY(28px) scale(.96)'),
+        display:'flex', flexDirection:'column', height:'100%',
       }}>
       {/* Top */}
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:16 }}>
@@ -170,7 +170,7 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
       <div style={{ position:'relative', zIndex:1 }}>
 
         {/* ── Hero section ── */}
-        <section style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'110px 24px 80px', textAlign:'center' }}>
+        <section style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'90px 24px 60px', textAlign:'center' }}>
 
           {/* Badge */}
           <div style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? 'translateY(0)' : 'translateY(16px)', transition:'opacity 0.7s cubic-bezier(.22,1,.36,1) 0s, transform 0.7s cubic-bezier(.22,1,.36,1) 0s' }}>
@@ -205,10 +205,10 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
         </section>
 
         {/* ── Modules grid ── */}
-        <section style={{ padding:'0 5vw 100px', maxWidth:1160, margin:'0 auto' }}>
+        <section style={{ padding:'0 5vw 70px', maxWidth:1120, margin:'0 auto' }}>
 
           <Reveal delay={0}>
-            <div style={{ textAlign:'center', marginBottom:52 }}>
+            <div style={{ textAlign:'center', marginBottom:36 }}>
               <div style={{ fontSize:10, fontWeight:700, letterSpacing:'2px', color:'#3d5060', marginBottom:14, textTransform:'uppercase' }}>
                 {lang === 'fr' ? 'Modules disponibles' : 'Available modules'}
               </div>
@@ -218,15 +218,10 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
             </div>
           </Reveal>
 
-          {/* 2+2 grid */}
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:20, marginBottom:20 }}>
-            {modules.slice(0, 2).map((m, i) => (
-              <ModuleCard key={m.id} m={m} delay={i * 0.08} onEnter={onEnter} lang={lang} />
-            ))}
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:20 }}>
-            {modules.slice(2, 4).map((m, i) => (
-              <ModuleCard key={m.id} m={m} delay={i * 0.08 + 0.1} onEnter={onEnter} lang={lang} />
+          {/* 2x2 optimised grid */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gridTemplateRows:'auto auto', gap:16 }}>
+            {modules.map((m, i) => (
+              <ModuleCard key={m.id} m={m} delay={i * 0.07} onEnter={onEnter} lang={lang} />
             ))}
           </div>
         </section>
