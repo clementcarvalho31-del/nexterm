@@ -580,7 +580,7 @@ export function SentimentPanel() {
   })
 
   // ── Sentiment content ───────────────────────────────────────────────────────
-  const SentimentContent = () => (
+  const renderSentiment = () => (
     <div style={{display:'flex',flexDirection:'column' as const,height:'100%',overflow:'hidden'}}>
       <div style={{flex:1,overflowY:'auto' as const}}>
         <div style={{padding:'12px 16px 6px'}}>
@@ -638,7 +638,7 @@ export function SentimentPanel() {
   )
 
   // ── Seasonality content ─────────────────────────────────────────────────────
-  const SeasonalityContent = () => {
+  const renderSeasonality = () => {
     const cur=seas[NM]
     return (
       <div style={{display:'flex',flexDirection:'column' as const,height:'100%',overflow:'hidden'}}>
@@ -709,15 +709,14 @@ export function SentimentPanel() {
         </div>
       </div>
 
-      {/* ── SINGLE ── */}
-      {layout==='single'&&tab==='sentiment'&&<SentimentContent/>}
-      {layout==='single'&&tab==='seasonality'&&<SeasonalityContent/>}
+      {layout==='single'&&tab==='sentiment'&&renderSentiment()}
+      {layout==='single'&&tab==='seasonality'&&renderSeasonality()}
 
       {/* ── SPLIT ── */}
       {layout==='split'&&(
         <div style={{flex:1,display:'flex',minHeight:0,overflow:'hidden'}}>
           <div style={{width:`${splitLeft}%`,flexShrink:0,display:'flex',flexDirection:'column' as const,overflow:'hidden'}}>
-            <SentimentContent/>
+            {renderSentiment()}
           </div>
           <div onMouseDown={onDragStart} style={{width:5,flexShrink:0,cursor:'col-resize',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 150ms',userSelect:'none' as const}}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(139,92,246,.15)'}
@@ -725,7 +724,7 @@ export function SentimentPanel() {
             <div style={{width:1,height:48,background:'rgba(139,92,246,.3)',borderRadius:1}}/>
           </div>
           <div style={{flex:1,display:'flex',flexDirection:'column' as const,overflow:'hidden',minWidth:0}}>
-            <SeasonalityContent/>
+            {renderSeasonality()}
           </div>
         </div>
       )}
