@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion'
 import { useTerminalStore } from '@/store/terminal'
 import { WORKSPACE_TABS } from '@/lib/data'
-import type { TabId } from '@/types'
+import type { TabId } from '@/src/types'
 
 export function WorkspaceTabs() {
   const activeTab    = useTerminalStore(s => s.activeTab)
