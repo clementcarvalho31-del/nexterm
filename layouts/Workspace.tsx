@@ -26,6 +26,7 @@ const PANELS: Record<TabId, React.ComponentType> = {
   flows:       FlowsPanel,
   copilot:     CopilotPanel,
   livefeed:    LiveFeedPanel,
+  trackrecord: LiveFeedPanel,
 }
 
 export function Workspace() {
