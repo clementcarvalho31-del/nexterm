@@ -288,7 +288,7 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
         {/* ── CTA strip ── */}
         <Reveal delay={0}>
           <section style={{ padding:'60px 5vw 80px', textAlign:'center' }}>
-            <div style={{ maxWidth:540, margin:'0 auto', padding:'40px', borderRadius:20, background:'rgba(240,180,41,.05)', border:'1px solid rgba(240,180,41,.18)', position:'relative', overflow:'hidden' }}>
+            <div style={{ maxWidth:540, margin:'0 auto', padding:'40px', borderRadius:20, background:'rgba(240,180,41,.05)', border:'1px solid rgba(240,180,41,.18)', position:'relative', overflowY:'auto', overflowX:'hidden' }}>
               <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'linear-gradient(90deg, transparent, rgba(240,180,41,.5), transparent)' }}/>
               <div style={{ fontSize:26, marginBottom:12 }}>🚀</div>
               <h2 style={{ fontSize:24, fontWeight:800, color:'#f0f4f8', letterSpacing:'-.5px', marginBottom:10 }}>
