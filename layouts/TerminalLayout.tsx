@@ -10,6 +10,7 @@ import { NewsFeedPanel }     from '@/modules/news/NewsFeedPanel'
 import { RightSidebar }      from '@/modules/news/RightSidebar'
 import { CalendarPanel }     from '@/modules/calendar/CalendarPanel'
 import { SentimentPanel }    from '@/modules/sentiment/SentimentPanel'
+import { LiveFeedPanel }     from '@/modules/livefeed/LiveFeedPanel'
 import { useTerminalStore }  from '@/store/terminal'
 
 function TerminalInner() {
@@ -28,25 +29,21 @@ function TerminalInner() {
     )
   }
 
-  if (activeTab === 'cot') {
+  if (activeTab === 'livefeed') {
+    return (
+      <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--t-surface-base)', color:'var(--t-text-primary)', fontFamily:'var(--t-font-sans)' }}>
+        <TopBar />
+        <div style={{ flex:1, minHeight:0, overflow:'hidden' }}>
+          <LiveFeedPanel />
+        </div>
+      </div>
+    )
+  }
     return (
       <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--t-surface-base)', color:'var(--t-text-primary)', fontFamily:'var(--t-font-sans)' }}>
         <TopBar />
         <div style={{ flex:1, minHeight:0, overflow:'hidden' }}>
           <SentimentPanel />
-        </div>
-      </div>
-    )
-  }
-
-
-  if (activeTab === 'trackrecord') {
-    return (
-      <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--t-surface-base)', color:'var(--t-text-primary)', fontFamily:'var(--t-font-sans)' }}>
-        <TopBar />
-        <WatchlistBar />
-        <div style={{ flex:1, minHeight:0, overflow:'hidden' }}>
-          <Workspace />
         </div>
       </div>
     )

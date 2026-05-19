@@ -265,6 +265,7 @@ export const WORKSPACE_TABS: Tab[] = [
   { id: 'dashboard',   label: 'DASHBOARD' },
   { id: 'cot',         label: 'COT' },
   { id: 'calendar',    label: 'CALENDAR' },
+  { id: 'livefeed',    label: 'LIVE FEED' },
   { id: 'newsplay',    label: 'EVENT TRADES' },
   { id: 'seasonality', label: 'SEASONALITY' },
   { id: 'worldbook',   label: 'WORLDBOOK' },
@@ -272,7 +273,6 @@ export const WORKSPACE_TABS: Tab[] = [
   { id: 'yields',      label: 'YIELDS' },
   { id: 'flows',       label: 'FLOWS' },
   { id: 'copilot',     label: 'AI COPILOT' },
-  { id: 'trackrecord', label: 'TRACK RECORD' },
 ]
 
 export const TICKER_ITEMS = [
