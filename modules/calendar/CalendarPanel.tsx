@@ -28,6 +28,19 @@ function getImpactLevel(impact: string): ImpactLevel {
   return 'low'
 }
 
+function formatTime24(time: string): string {
+  if (!time) return '—'
+  const t = time.toLowerCase().replace(' ','')
+  const isPM = t.includes('pm'), isAM = t.includes('am')
+  const clean = t.replace('am','').replace('pm','')
+  const [hS,mS] = clean.split(':')
+  let h = parseInt(hS)||0
+  const m = parseInt(mS)||0
+  if(isPM && h!==12) h+=12
+  if(isAM && h===12) h=0
+  return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`
+}
+
 function forecastRange(forecast: string) {
   if (!forecast) return null
   const val = parseFloat(forecast.replace(/[^0-9.-]/g,''))
@@ -102,7 +115,6 @@ const NEWS_FALLBACK: NewsItem[] = [
   {id:'n12',title:'US 10Y yield pushes to 4.48% — dollar broadly bid, EM currencies under significant pressure.',date:new Date(Date.now()-21600000).toISOString(),tags:['USD','BONDS'],impact:'high',currency:'USD',age:'6h'},
 ]
 
-// ── Live clock ──────────────────────────────────────────────────────────────
 function LiveClock() {
   const [time, setTime] = useState('')
   useEffect(() => {
@@ -112,7 +124,6 @@ function LiveClock() {
   return <span style={{fontFamily:'IBM Plex Mono,monospace',fontSize:11,color:'#4a5e72',letterSpacing:'.5px'}}>{time}</span>
 }
 
-// ── Countdown ───────────────────────────────────────────────────────────────
 function NextEventCountdown({events}:{events:CalEvent[]}) {
   const [display, setDisplay] = useState({time:'—',name:'',urgent:false})
   useEffect(()=>{
@@ -217,14 +228,12 @@ export function CalendarPanel() {
   const highCount      = events.filter(e=>e.impactLevel==='high').length
   const CURRENCIES     = ['ALL','USD','EUR','GBP','JPY','CAD','AUD','NZD','CHF']
 
-  // Impact config
   const IC = {
     high:{ color:'#ef4444', dim:'rgba(239,68,68,.5)', bg:'rgba(239,68,68,.08)', border:'rgba(239,68,68,.2)', stars:'★★★', label:'HIGH' },
     med: { color:'#f0b429', dim:'rgba(240,180,41,.5)', bg:'rgba(240,180,41,.06)', border:'rgba(240,180,41,.2)', stars:'★★☆', label:'MED'  },
     low: { color:'#2d3d4d', dim:'#1e2a35',           bg:'transparent',          border:'transparent',        stars:'★☆☆', label:'LOW'  },
   }
 
-  // Pill style
   const pill = (active:boolean, color='#f0b429') => ({
     padding:'5px 14px', borderRadius:20, fontSize:11, fontWeight:600 as const, cursor:'pointer' as const,
     border:`1px solid ${active?color+'55':'rgba(255,255,255,.07)'}`,
@@ -233,7 +242,7 @@ export function CalendarPanel() {
   })
 
   const [layout, setLayout] = useState<'single'|'split'>('single')
-  const [splitLeft, setSplitLeft] = useState(50) // percentage
+  const [splitLeft, setSplitLeft] = useState(50)
   const isDragging = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -255,60 +264,40 @@ export function CalendarPanel() {
   return (
     <div ref={containerRef} style={{height:'100%',display:'flex',flexDirection:'column',background:'#06080d',fontFamily:"'Inter',-apple-system,sans-serif",overflow:'hidden'}}>
 
-      {/* ══ HEADER PREMIUM ══ */}
       <div style={{flexShrink:0,background:'linear-gradient(180deg,rgba(13,18,28,.95) 0%,rgba(6,8,13,.95) 100%)',borderBottom:'1px solid rgba(255,255,255,.06)',padding:'28px 48px 0'}}>
-        
-        {/* Top row */}
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
-          {/* Titre */}
           <div style={{display:'flex',alignItems:'center',gap:16}}>
             <div>
               <div style={{fontSize:11,fontWeight:600,letterSpacing:'2px',color:'#3d5060',textTransform:'uppercase' as const,marginBottom:2}}>Institutional Trading Desk</div>
               <h1 style={{fontSize:28,fontWeight:800,letterSpacing:'-0.8px',color:'#f0f4f8',margin:0,lineHeight:1.1}}>
-                Calendrier <span style={{color:'#f0b429'}}>&</span> News Macro
+                Calendrier <span style={{color:'#f0b429'}}>&</span> Actualités Macro
               </h1>
             </div>
           </div>
-
-          {/* Right: layout toggle + refresh */}
           <div style={{display:'flex',alignItems:'center',gap:10,marginLeft:'auto'}}>
             {refreshing
               ? <span style={{fontSize:10,color:'#f0b429',fontWeight:600,letterSpacing:'.5px',animation:'t-pulse 1s infinite'}}>● LIVE</span>
               : <span style={{fontSize:10,color:'#2d3f50',letterSpacing:'.5px'}}>{lastUpdate&&`Mis à jour ${lastUpdate}`}</span>
             }
             <button onClick={fetchAll} style={{display:'flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:5,fontSize:10,fontWeight:600,cursor:'pointer',border:'1px solid rgba(255,255,255,.1)',background:'rgba(255,255,255,.04)',color:'#8a9db5',fontFamily:'inherit',letterSpacing:'.4px',transition:'all 150ms'}} onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,.08)';e.currentTarget.style.color='#c8d6e5'}} onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.04)';e.currentTarget.style.color='#8a9db5'}}>
-              ↻ Refresh
+              ↻ Actualiser
             </button>
             <div style={{width:1,height:20,background:'rgba(255,255,255,.07)'}}/>
-            {/* Layout buttons */}
             <div style={{display:'flex',gap:3,padding:'3px',borderRadius:6,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)'}}>
               <button onClick={()=>setLayout('single')} title="Vue unique" style={{width:30,height:28,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'none',background:layout==='single'?'rgba(240,180,41,.2)':'transparent',transition:'all 120ms'}}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <rect x="2" y="2" width="12" height="12" rx="2" stroke={layout==='single'?'#f0b429':'#4a5e72'} strokeWidth="1.5"/>
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke={layout==='single'?'#f0b429':'#4a5e72'} strokeWidth="1.5"/></svg>
               </button>
               <button onClick={()=>setLayout('split')} title="Vue côte à côte" style={{width:30,height:28,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'none',background:layout==='split'?'rgba(240,180,41,.2)':'transparent',transition:'all 120ms'}}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <rect x="2" y="2" width="5" height="12" rx="1.5" stroke={layout==='split'?'#f0b429':'#4a5e72'} strokeWidth="1.5"/>
-                  <rect x="9" y="2" width="5" height="12" rx="1.5" stroke={layout==='split'?'#f0b429':'#4a5e72'} strokeWidth="1.5"/>
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="12" rx="1.5" stroke={layout==='split'?'#f0b429':'#4a5e72'} strokeWidth="1.5"/><rect x="9" y="2" width="5" height="12" rx="1.5" stroke={layout==='split'?'#f0b429':'#4a5e72'} strokeWidth="1.5"/></svg>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Tabs — cachés en mode split */}
         {layout==='single'&&(
         <div style={{display:'flex',gap:0,borderBottom:'1px solid rgba(255,255,255,.06)',marginBottom:0}}>
           {([['calendar','📅  Calendrier Économique'],['news','📰  News Macro Feed']] as [Tab,string][]).map(([t,l])=>(
-            <button key={t} onClick={()=>setTab(t as Tab)} style={{
-              padding:'14px 32px', fontSize:13, fontWeight:tab===t?700:400,
-              cursor:'pointer', border:'none', letterSpacing:'-0.2px',
-              borderBottom:tab===t?'2px solid #f0b429':'2px solid transparent',
-              background:'transparent', color:tab===t?'#f0f4f8':'#4a5e72',
-              transition:'all 150ms', fontFamily:'inherit',
-              display:'flex', alignItems:'center', gap:8, marginBottom:-1,
-            }}>
+            <button key={t} onClick={()=>setTab(t as Tab)} style={{padding:'14px 32px',fontSize:13,fontWeight:tab===t?700:400,cursor:'pointer',border:'none',letterSpacing:'-0.2px',borderBottom:tab===t?'2px solid #f0b429':'2px solid transparent',background:'transparent',color:tab===t?'#f0f4f8':'#4a5e72',transition:'all 150ms',fontFamily:'inherit',display:'flex',alignItems:'center',gap:8,marginBottom:-1}}>
               {l}
               {t==='calendar'&&highCount>0&&(
                 <span style={{fontSize:9,padding:'2px 7px',borderRadius:10,background:'rgba(239,68,68,.15)',color:'#ef4444',fontWeight:700,border:'1px solid rgba(239,68,68,.3)'}}>{highCount} HIGH</span>
@@ -325,42 +314,29 @@ export function CalendarPanel() {
         )}
       </div>
 
-      {/* ══ CALENDAR TAB (mode single seulement) ══ */}
       {layout==='single'&&tab==='calendar'&&<>
-
-        {/* Filter bar */}
         <div style={{padding:'12px 48px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const,background:'rgba(255,255,255,.015)'}}>
           <span style={{fontSize:9,fontWeight:700,letterSpacing:'1.5px',color:'#2d3f50',marginRight:4,textTransform:'uppercase' as const}}>IMPACT</span>
           {(['all','high','med','low'] as const).map(i=>{
             const c=i==='high'?'#ef4444':i==='med'?'#f0b429':i==='low'?'#4a5e72':'#c8d6e5'
-            return <button key={i} onClick={()=>setImpactFilter(i)} style={pill(impactFilter===i,c)}>
-              {i==='all'?'Tous':IC[i as ImpactLevel]?.stars}
-            </button>
+            return <button key={i} onClick={()=>setImpactFilter(i)} style={pill(impactFilter===i,c)}>{i==='all'?'Tous':IC[i as ImpactLevel]?.stars}</button>
           })}
           <div style={{width:1,height:20,background:'rgba(255,255,255,.07)',margin:'0 8px'}}/>
           <span style={{fontSize:9,fontWeight:700,letterSpacing:'1.5px',color:'#2d3f50',marginRight:4,textTransform:'uppercase' as const}}>DEVISE</span>
           {CURRENCIES.map(c=>{
             const active = currencies.has(c)
-            return <button key={c} onClick={()=>toggleCurrency(c)} style={{
-              padding:'5px 14px', borderRadius:20, fontSize:11, fontWeight:600, cursor:'pointer',
-              border:`1px solid ${active?'rgba(240,180,41,.55)':'rgba(255,255,255,.07)'}`,
-              background:active?'rgba(240,180,41,.12)':'transparent',
-              color:active?'#f0b429':'#3d5060', transition:'all 150ms', fontFamily:'inherit',
-              boxShadow:active?'0 0 8px rgba(240,180,41,.15)':'none',
-            }}>{c}</button>
+            return <button key={c} onClick={()=>toggleCurrency(c)} style={{padding:'5px 14px',borderRadius:20,fontSize:11,fontWeight:600,cursor:'pointer',border:`1px solid ${active?'rgba(240,180,41,.55)':'rgba(255,255,255,.07)'}`,background:active?'rgba(240,180,41,.12)':'transparent',color:active?'#f0b429':'#3d5060',transition:'all 150ms',fontFamily:'inherit',boxShadow:active?'0 0 8px rgba(240,180,41,.15)':'none'}}>{c}</button>
           })}
           <div style={{flex:1}}/>
           <span style={{fontSize:10,color:'#2d3f50'}}>{filteredEvents.length} événements</span>
         </div>
 
-        {/* Column headers */}
         <div style={{display:'grid',gridTemplateColumns:'56px 64px 24px 40px 1fr 150px 52px 52px 48px',padding:'8px 48px',background:'rgba(0,0,0,.35)',borderBottom:'1px solid rgba(255,255,255,.04)',flexShrink:0}}>
-          {[['IMPACT','left'],['HEURE ET','left'],['','left'],['','left'],['ÉVÉNEMENT','left'],['LOW │ FORE │ HIGH','center'],['PREV','right'],['ACT','right'],['','right']].map(([h,a],i)=>(
+          {[['IMPACT','left'],['HEURE','left'],['','left'],['','left'],['ÉVÉNEMENT','left'],['LOW │ FORE │ HIGH','center'],['PREV','right'],['ACT','right'],['','right']].map(([h,a],i)=>(
             <span key={i} style={{fontSize:8,fontWeight:700,color:'#2d3f50',letterSpacing:'1.2px',textTransform:'uppercase' as const,textAlign:a as any}}>{h}</span>
           ))}
         </div>
 
-        {/* Events */}
         <div style={{flex:1,overflowY:'auto'}}>
           {loading?(
             <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:200,gap:12}}>
@@ -375,7 +351,6 @@ export function CalendarPanel() {
           ):(
             grouped.map(([day,dayEvents])=>(
               <div key={day}>
-                {/* Day separator */}
                 <div style={{display:'flex',alignItems:'center',gap:14,padding:'10px 48px',background:'rgba(240,180,41,.02)',borderTop:'1px solid rgba(240,180,41,.06)',borderBottom:'1px solid rgba(255,255,255,.03)',position:'sticky' as const,top:0,zIndex:3,backdropFilter:'blur(16px)'}}>
                   <span style={{fontSize:10,fontWeight:800,color:'#f0b429',letterSpacing:'1.5px',textTransform:'uppercase' as const}}>{day}</span>
                   <div style={{flex:1,height:'0.5px',background:'linear-gradient(90deg,rgba(240,180,41,.2),transparent)'}}/>
@@ -388,75 +363,51 @@ export function CalendarPanel() {
                   <span style={{fontSize:9,color:'#2d3f50',fontWeight:500}}>{dayEvents.length} events</span>
                 </div>
 
-                {/* Rows */}
-                {dayEvents.map((ev,idx)=>{
+                {dayEvents.map((ev)=>{
                   const ic = IC[ev.impactLevel]
                   const hasActual = !!ev.actual
                   const isHigh = ev.impactLevel==='high'
                   return (
-                    <div key={ev.id} style={{
-                      display:'grid',gridTemplateColumns:'56px 64px 24px 40px 1fr 150px 52px 52px 48px',
-                      alignItems:'center',padding:'11px 48px',
-                      borderBottom:'1px solid rgba(255,255,255,.03)',
-                      background:isHigh?'rgba(239,68,68,.018)':'transparent',
-                      borderLeft:isHigh?'3px solid rgba(239,68,68,.4)':'3px solid transparent',
-                      transition:'background 80ms',
-                    }}
+                    <div key={ev.id} style={{display:'grid',gridTemplateColumns:'56px 64px 24px 40px 1fr 150px 52px 52px 48px',alignItems:'center',padding:'11px 48px',borderBottom:'1px solid rgba(255,255,255,.03)',background:isHigh?'rgba(239,68,68,.018)':'transparent',borderLeft:isHigh?'3px solid rgba(239,68,68,.4)':'3px solid transparent',transition:'background 80ms'}}
                       onMouseEnter={e=>e.currentTarget.style.background=isHigh?'rgba(239,68,68,.04)':'rgba(255,255,255,.025)'}
                       onMouseLeave={e=>e.currentTarget.style.background=isHigh?'rgba(239,68,68,.018)':'transparent'}>
 
-                      {/* Impact stars */}
                       <div style={{display:'flex',alignItems:'center',gap:4}}>
                         <span style={{fontSize:10,color:ic.color,letterSpacing:.5,fontWeight:700}}>{ic.stars}</span>
                       </div>
 
-                      {/* Time */}
-                      <span style={{fontSize:11,color:isHigh?'#c8d6e5':'#5a7080',fontFamily:'IBM Plex Mono,monospace',fontWeight:isHigh?600:400,letterSpacing:'.3px'}}>
-                        {ev.time?.toLowerCase().replace(' ','')||'—'}
+                      {/* Heure en 24h */}
+                      <span style={{fontSize:11,color:isHigh?'#c8d6e5':'#5a7080',fontFamily:'IBM Plex Mono,monospace',fontWeight:700,letterSpacing:'.3px'}}>
+                        {formatTime24(ev.time)}
                       </span>
 
-                      {/* Flag */}
                       <span style={{fontSize:14,lineHeight:1}}>{ev.flag}</span>
-
-                      {/* Country */}
                       <span style={{fontSize:11,fontWeight:800,color:'#4a5e72',letterSpacing:'.5px'}}>{ev.country}</span>
 
-                      {/* Title */}
-                      <span style={{
-                        fontSize:13, fontWeight:700,
-                        color:isHigh?'#f0f4f8':ev.impactLevel==='med'?'#b8cad9':'#8a9db5',
-                        lineHeight:1.4, paddingRight:16, letterSpacing:'-0.2px',
-                      }}>
+                      <span style={{fontSize:13,fontWeight:700,color:isHigh?'#f0f4f8':ev.impactLevel==='med'?'#b8cad9':'#8a9db5',lineHeight:1.4,paddingRight:16,letterSpacing:'-0.2px'}}>
                         {ev.title}
                       </span>
 
-                      {/* Forecast range */}
                       {ev.forecastLow&&ev.forecastHigh?(
                         <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:3,fontSize:10,fontFamily:'IBM Plex Mono,monospace'}}>
-                          <span style={{color:'rgba(239,68,68,.7)'}}>{ev.forecastLow}</span>
+                          <span style={{color:'rgba(239,68,68,.7)',fontWeight:700}}>{ev.forecastLow}</span>
                           <span style={{color:'rgba(255,255,255,.12)'}}>│</span>
-                          <span style={{color:'#f0b429',fontWeight:700,fontSize:11}}>{ev.forecast}</span>
+                          <span style={{color:'#f0b429',fontWeight:800,fontSize:11}}>{ev.forecast}</span>
                           <span style={{color:'rgba(255,255,255,.12)'}}>│</span>
-                          <span style={{color:'rgba(34,197,94,.7)'}}>{ev.forecastHigh}</span>
+                          <span style={{color:'rgba(34,197,94,.7)',fontWeight:700}}>{ev.forecastHigh}</span>
                         </div>
                       ):<span style={{textAlign:'center' as const,fontSize:10,color:'#1e2a35',fontFamily:'IBM Plex Mono,monospace'}}>—</span>}
 
-                      {/* Previous */}
-                      <span style={{fontSize:10,color:'#4a5e72',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{ev.previous||'—'}</span>
+                      {/* Previous en gras */}
+                      <span style={{fontSize:11,fontWeight:700,color:'#7a8fa8',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{ev.previous||'—'}</span>
 
-                      {/* Actual */}
-                      <span style={{fontSize:11,fontWeight:hasActual?700:400,color:hasActual?'#22c55e':'#1e2a35',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>
+                      {/* Actual en gras + couleur */}
+                      <span style={{fontSize:11,fontWeight:700,color:hasActual?'#22c55e':'#1e2a35',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>
                         {ev.actual||'—'}
                       </span>
 
-                      {/* Badge */}
                       <div style={{display:'flex',justifyContent:'flex-end'}}>
-                        <span style={{
-                          fontSize:8,fontWeight:800,padding:'3px 6px',borderRadius:3,
-                          background:ic.bg,color:ic.color,
-                          border:`1px solid ${ic.border}`,
-                          letterSpacing:'.8px',textTransform:'uppercase' as const,
-                        }}>{ic.label}</span>
+                        <span style={{fontSize:8,fontWeight:800,padding:'3px 6px',borderRadius:3,background:ic.bg,color:ic.color,border:`1px solid ${ic.border}`,letterSpacing:'.8px',textTransform:'uppercase' as const}}>{ic.label}</span>
                       </div>
                     </div>
                   )
@@ -467,15 +418,12 @@ export function CalendarPanel() {
         </div>
 
         <div style={{padding:'6px 48px',borderTop:'1px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(0,0,0,.2)'}}>
-          <span style={{fontSize:9,color:'#1e2a35',letterSpacing:'.4px'}}>SOURCE: FOREX FACTORY  •  AUTO-REFRESH 30S  •  HORAIRES ET (EASTERN TIME)</span>
+          <span style={{fontSize:9,color:'#1e2a35',letterSpacing:'.4px'}}>SOURCE: FOREX FACTORY  •  AUTO-REFRESH 30S  •  HORAIRES 24H</span>
           <span style={{fontSize:9,color:'#1e2a35',letterSpacing:'.4px'}}>{filteredEvents.length} ÉVÉNEMENTS AFFICHÉS</span>
         </div>
       </>}
 
-      {/* ══ NEWS TAB (mode single seulement) ══ */}
       {layout==='single'&&tab==='news'&&<>
-
-        {/* Filter bar */}
         <div style={{padding:'12px 48px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const,background:'rgba(255,255,255,.015)'}}>
           <span style={{fontSize:9,fontWeight:700,letterSpacing:'1.5px',color:'#2d3f50',marginRight:4,textTransform:'uppercase' as const}}>IMPORTANCE</span>
           {([['all','Toutes','#c8d6e5'],['high','Haute','#ef4444'],['med','Moyenne','#f0b429']] as const).map(([i,l,c])=>(
@@ -485,13 +433,7 @@ export function CalendarPanel() {
           <span style={{fontSize:9,fontWeight:700,letterSpacing:'1.5px',color:'#2d3f50',marginRight:4,textTransform:'uppercase' as const}}>DEVISE</span>
           {CURRENCIES.map(c=>{
             const active = newsCurrencies.has(c)
-            return <button key={c} onClick={()=>toggleNewsCurrency(c)} style={{
-              padding:'5px 14px', borderRadius:20, fontSize:11, fontWeight:600, cursor:'pointer',
-              border:`1px solid ${active?'rgba(240,180,41,.55)':'rgba(255,255,255,.07)'}`,
-              background:active?'rgba(240,180,41,.12)':'transparent',
-              color:active?'#f0b429':'#3d5060', transition:'all 150ms', fontFamily:'inherit',
-              boxShadow:active?'0 0 8px rgba(240,180,41,.15)':'none',
-            }}>{c}</button>
+            return <button key={c} onClick={()=>toggleNewsCurrency(c)} style={{padding:'5px 14px',borderRadius:20,fontSize:11,fontWeight:600,cursor:'pointer',border:`1px solid ${active?'rgba(240,180,41,.55)':'rgba(255,255,255,.07)'}`,background:active?'rgba(240,180,41,.12)':'transparent',color:active?'#f0b429':'#3d5060',transition:'all 150ms',fontFamily:'inherit',boxShadow:active?'0 0 8px rgba(240,180,41,.15)':'none'}}>{c}</button>
           })}
           <div style={{flex:1}}/>
           <div style={{display:'flex',alignItems:'center',gap:6}}>
@@ -500,37 +442,26 @@ export function CalendarPanel() {
           </div>
         </div>
 
-        {/* News feed */}
         <div style={{flex:1,overflowY:'auto'}}>
-          {filteredNews.map((item,idx)=>{
+          {filteredNews.map((item)=>{
             const isHigh = item.impact==='high'
             const isMed  = item.impact==='med'
             return (
-              <div key={item.id} style={{
-                display:'flex',gap:20,padding:'18px 48px',
-                borderBottom:'1px solid rgba(255,255,255,.035)',
-                background:isHigh?'rgba(239,68,68,.025)':'transparent',
-                borderLeft:isHigh?'3px solid rgba(239,68,68,.5)':isMed?'3px solid rgba(240,180,41,.3)':'3px solid rgba(255,255,255,.04)',
-                transition:'background 80ms',cursor:'pointer',
-              }}
+              <div key={item.id} style={{display:'flex',gap:20,padding:'18px 48px',borderBottom:'1px solid rgba(255,255,255,.035)',background:isHigh?'rgba(239,68,68,.025)':'transparent',borderLeft:isHigh?'3px solid rgba(239,68,68,.5)':isMed?'3px solid rgba(240,180,41,.3)':'3px solid rgba(255,255,255,.04)',transition:'background 80ms',cursor:'pointer'}}
                 onMouseEnter={e=>e.currentTarget.style.background=isHigh?'rgba(239,68,68,.05)':'rgba(255,255,255,.02)'}
                 onMouseLeave={e=>e.currentTarget.style.background=isHigh?'rgba(239,68,68,.025)':'transparent'}>
 
-                {/* Left column */}
                 <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,flexShrink:0,width:60,paddingTop:3}}>
-                  <span style={{
-                    width:8,height:8,borderRadius:'50%',display:'block',
-                    background:isHigh?'#ef4444':isMed?'#f0b429':'#2d3f50',
-                    boxShadow:isHigh?'0 0 10px rgba(239,68,68,.6)':isMed?'0 0 8px rgba(240,180,41,.4)':'none',
-                    animation:isHigh?'t-pulse 2s infinite':'none',flexShrink:0,
-                  }}/>
+                  <span style={{width:8,height:8,borderRadius:'50%',display:'block',background:isHigh?'#ef4444':isMed?'#f0b429':'#2d3f50',boxShadow:isHigh?'0 0 10px rgba(239,68,68,.6)':isMed?'0 0 8px rgba(240,180,41,.4)':'none',animation:isHigh?'t-pulse 2s infinite':'none',flexShrink:0}}/>
                   {item.currency!=='ALL'&&<span style={{fontSize:16}}>{FLAGS[item.currency]||'🌐'}</span>}
-                  <span style={{fontSize:9,color:'#2d3f50',fontFamily:'IBM Plex Mono,monospace',textAlign:'center' as const,lineHeight:1.3}}>{item.age}</span>
+                  {/* Heure de la news */}
+                  <span style={{fontSize:9,color:'#4a5e72',fontFamily:'IBM Plex Mono,monospace',textAlign:'center' as const,lineHeight:1.3,fontWeight:700}}>
+                    {new Date(item.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+                  </span>
+                  <span style={{fontSize:9,color:'#2d3f50',fontFamily:'IBM Plex Mono,monospace',textAlign:'center' as const}}>{item.age}</span>
                 </div>
 
-                {/* Content */}
                 <div style={{flex:1,minWidth:0}}>
-                  {/* Badge */}
                   {isHigh&&(
                     <div style={{display:'inline-flex',alignItems:'center',gap:5,marginBottom:8,padding:'3px 10px',borderRadius:3,background:'rgba(239,68,68,.12)',border:'1px solid rgba(239,68,68,.25)'}}>
                       <span style={{width:4,height:4,borderRadius:'50%',background:'#ef4444',display:'inline-block',animation:'t-pulse 1.5s infinite'}}/>
@@ -542,15 +473,9 @@ export function CalendarPanel() {
                       <span style={{fontSize:9,fontWeight:700,color:'#f0b429',letterSpacing:'1px'}}>IMPORTANCE MOYENNE</span>
                     </div>
                   )}
-
-                  <p style={{
-                    fontSize:isHigh?14:13, fontWeight:700,
-                    color:isHigh?'#f0f4f8':isMed?'#c8d6e5':'#8a9db5',
-                    lineHeight:1.6, margin:'0 0 10px', letterSpacing:'-0.2px',
-                  }}>
+                  <p style={{fontSize:isHigh?14:13,fontWeight:700,color:isHigh?'#f0f4f8':isMed?'#c8d6e5':'#8a9db5',lineHeight:1.6,margin:'0 0 10px',letterSpacing:'-0.2px'}}>
                     {item.title}
                   </p>
-
                   <div style={{display:'flex',gap:5,flexWrap:'wrap' as const}}>
                     {item.tags.slice(0,5).map(t=>(
                       <span key={t} style={{fontSize:9,fontWeight:600,padding:'2px 8px',borderRadius:3,background:'rgba(255,255,255,.04)',color:'#4a5e72',border:'1px solid rgba(255,255,255,.07)',letterSpacing:'.4px'}}>{t}</span>
@@ -568,18 +493,13 @@ export function CalendarPanel() {
         </div>
       </>}
 
-      {/* ══ SPLIT LAYOUT ══ */}
       {layout==='split'&&(
         <div style={{flex:1,display:'flex',minHeight:0,overflow:'hidden'}}>
-          {/* Left: Calendar */}
           <div style={{width:`${splitLeft}%`,display:'flex',flexDirection:'column',overflow:'hidden',flexShrink:0}}>
-            {/* Filter bar calendar */}
             <div style={{padding:'8px 20px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,display:'flex',alignItems:'center',gap:4,flexWrap:'wrap' as const,background:'rgba(255,255,255,.01)'}}>
               {(['all','high','med','low'] as const).map(i=>{
                 const c=i==='high'?'#ef4444':i==='med'?'#f0b429':i==='low'?'#4a5e72':'#c8d6e5'
-                return <button key={i} onClick={()=>setImpactFilter(i)} style={pill(impactFilter===i,c)}>
-                  {i==='all'?'Tous':IC[i as ImpactLevel]?.stars}
-                </button>
+                return <button key={i} onClick={()=>setImpactFilter(i)} style={pill(impactFilter===i,c)}>{i==='all'?'Tous':IC[i as ImpactLevel]?.stars}</button>
               })}
               <div style={{width:1,height:14,background:'rgba(255,255,255,.07)',margin:'0 4px'}}/>
               {CURRENCIES.map(c=>{
@@ -603,19 +523,19 @@ export function CalendarPanel() {
                         onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,.025)'}
                         onMouseLeave={e=>e.currentTarget.style.background=ev.impactLevel==='high'?'rgba(239,68,68,.018)':'transparent'}>
                         <span style={{fontSize:9,color:ic.color}}>{ic.stars}</span>
-                        <span style={{fontSize:9,color:'#5a7080',fontFamily:'IBM Plex Mono,monospace'}}>{ev.time?.toLowerCase().replace(' ','')||'—'}</span>
+                        <span style={{fontSize:9,fontWeight:700,color:'#7a8fa8',fontFamily:'IBM Plex Mono,monospace'}}>{formatTime24(ev.time)}</span>
                         <span style={{fontSize:11}}>{ev.flag}</span>
                         <span style={{fontSize:9,fontWeight:800,color:'#4a5e72'}}>{ev.country}</span>
                         <span style={{fontSize:11,fontWeight:700,color:ev.impactLevel==='high'?'#f0f4f8':ev.impactLevel==='med'?'#b8cad9':'#8a9db5',paddingRight:8,lineHeight:1.3}}>{ev.title}</span>
                         {ev.forecastLow&&ev.forecastHigh?(
                           <div style={{display:'flex',alignItems:'center',gap:1,fontSize:8,fontFamily:'IBM Plex Mono,monospace',justifyContent:'center'}}>
-                            <span style={{color:'rgba(239,68,68,.7)'}}>{ev.forecastLow}</span><span style={{color:'rgba(255,255,255,.1)'}}>│</span>
-                            <span style={{color:'#f0b429',fontWeight:700}}>{ev.forecast}</span><span style={{color:'rgba(255,255,255,.1)'}}>│</span>
-                            <span style={{color:'rgba(34,197,94,.7)'}}>{ev.forecastHigh}</span>
+                            <span style={{color:'rgba(239,68,68,.7)',fontWeight:700}}>{ev.forecastLow}</span><span style={{color:'rgba(255,255,255,.1)'}}>│</span>
+                            <span style={{color:'#f0b429',fontWeight:800}}>{ev.forecast}</span><span style={{color:'rgba(255,255,255,.1)'}}>│</span>
+                            <span style={{color:'rgba(34,197,94,.7)',fontWeight:700}}>{ev.forecastHigh}</span>
                           </div>
                         ):<span style={{textAlign:'center' as const,fontSize:8,color:'#1e2a35'}}>—</span>}
-                        <span style={{fontSize:9,color:'#4a5e72',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{ev.previous||'—'}</span>
-                        <span style={{fontSize:9,fontWeight:hasActual?700:400,color:hasActual?'#22c55e':'#1e2a35',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{ev.actual||'—'}</span>
+                        <span style={{fontSize:9,fontWeight:700,color:'#7a8fa8',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{ev.previous||'—'}</span>
+                        <span style={{fontSize:9,fontWeight:700,color:hasActual?'#22c55e':'#1e2a35',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{ev.actual||'—'}</span>
                       </div>
                     )
                   })}
@@ -624,16 +544,13 @@ export function CalendarPanel() {
             </div>
           </div>
 
-          {/* Draggable divider */}
           <div onMouseDown={onDragStart} style={{width:5,flexShrink:0,cursor:'col-resize',background:'transparent',borderLeft:'1px solid rgba(255,255,255,.06)',borderRight:'1px solid rgba(255,255,255,.06)',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 150ms',userSelect:'none' as const}}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(240,180,41,.15)'}
             onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
             <div style={{width:1,height:40,background:'rgba(240,180,41,.3)',borderRadius:1}}/>
           </div>
 
-          {/* Right: News */}
           <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minWidth:0}}>
-            {/* Filter bar news */}
             <div style={{padding:'8px 20px',borderBottom:'1px solid rgba(255,255,255,.05)',flexShrink:0,display:'flex',alignItems:'center',gap:4,flexWrap:'wrap' as const,background:'rgba(255,255,255,.01)'}}>
               {(['all','high','med'] as const).map(i=>{
                 const c=i==='high'?'#ef4444':i==='med'?'#f0b429':'#c8d6e5'
@@ -655,6 +572,9 @@ export function CalendarPanel() {
                     <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,flexShrink:0,width:40,paddingTop:2}}>
                       <span style={{width:6,height:6,borderRadius:'50%',display:'block',background:isHigh?'#ef4444':isMed?'#f0b429':'#2d3f50',boxShadow:isHigh?'0 0 8px rgba(239,68,68,.6)':'none',animation:isHigh?'t-pulse 2s infinite':'none'}}/>
                       {item.currency!=='ALL'&&<span style={{fontSize:12}}>{FLAGS[item.currency]||'🌐'}</span>}
+                      <span style={{fontSize:8,fontWeight:700,color:'#4a5e72',fontFamily:'IBM Plex Mono,monospace'}}>
+                        {new Date(item.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+                      </span>
                       <span style={{fontSize:8,color:'#2d3f50',fontFamily:'IBM Plex Mono,monospace'}}>{item.age}</span>
                     </div>
                     <div style={{flex:1,minWidth:0}}>
@@ -676,4 +596,4 @@ export function CalendarPanel() {
       )}
     </div>
   )
-}
+}Ò
