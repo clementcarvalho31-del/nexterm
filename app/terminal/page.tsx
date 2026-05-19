@@ -68,7 +68,6 @@ function ModuleCard({ m, delay, onEnter, lang }: { m:any; delay:number; onEnter:
       onMouseLeave={() => setHov(false)}
       style={{
         opacity:    visible ? 1 : 0,
-        transform:  visible ? 'translateY(0) scale(1)' : 'translateY(32px) scale(.97)',
         transition: `opacity 0.6s cubic-bezier(.22,1,.36,1) ${delay}s, transform 0.6s cubic-bezier(.22,1,.36,1) ${delay}s, box-shadow 200ms, border-color 200ms, background 200ms`,
         padding: '26px 22px', borderRadius:16, cursor:'pointer',
         background: hov ? m.bg : 'rgba(255,255,255,.025)',
