@@ -10,7 +10,8 @@ import { WorldbookPanel }   from '@/modules/worldbook/WorldbookPanel'
 import { LiquidityPanel }   from '@/modules/liquidity/LiquidityPanel'
 import { YieldsPanel }      from '@/modules/yields/YieldsPanel'
 import { FlowsPanel }       from '@/modules/flows/FlowsPanel'
-import { CopilotPanel }     from '@/modules/copilot/CopilotPanel'
+import { CopilotPanel }      from '@/modules/copilot/CopilotPanel'
+import { TrackRecordPanel }  from '@/modules/trackrecord/TrackRecordPanel'
 import type { TabId } from '@/types'
 
 const PANELS: Record<TabId, React.ComponentType> = {
@@ -24,6 +25,7 @@ const PANELS: Record<TabId, React.ComponentType> = {
   yields:      YieldsPanel,
   flows:       FlowsPanel,
   copilot:     CopilotPanel,
+  trackrecord: TrackRecordPanel,
 }
 
 export function Workspace() {

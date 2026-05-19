@@ -9,6 +9,7 @@ const NAV: { id: TabId; label: string; pulse?: string }[] = [
   { id: 'cot',         label: 'Sentiment',  pulse: '#a78bfa' },
   { id: 'worldbook',   label: 'Research' },
   { id: 'newsplay',    label: 'Event Trades' },
+  { id: 'trackrecord', label: 'Track Record', pulse: '#FF6B00' },
 ]
 
 export function TopBar() {
