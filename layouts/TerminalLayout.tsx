@@ -13,44 +13,46 @@ import { SentimentPanel }    from '@/modules/sentiment/SentimentPanel'
 import { LiveFeedPanel }     from '@/modules/livefeed/LiveFeedPanel'
 import { useTerminalStore }  from '@/store/terminal'
 
+const FULLSCREEN_STYLE = {
+  display:'flex' as const, flexDirection:'column' as const,
+  height:'100vh', overflow:'hidden',
+  background:'var(--t-surface-base)', color:'var(--t-text-primary)',
+  fontFamily:'var(--t-font-sans)',
+}
+
 function TerminalInner() {
   useRealtimeMarket()
   const activeTab = useTerminalStore(s => s.activeTab)
 
-  // Full screen modules
   if (activeTab === 'calendar') {
     return (
-      <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--t-surface-base)', color:'var(--t-text-primary)', fontFamily:'var(--t-font-sans)' }}>
+      <div style={FULLSCREEN_STYLE}>
         <TopBar />
-        <div style={{ flex:1, minHeight:0, overflow:'hidden' }}>
-          <CalendarPanel />
-        </div>
+        <div style={{ flex:1, minHeight:0, overflow:'hidden' }}><CalendarPanel /></div>
+      </div>
+    )
+  }
+
+  if (activeTab === 'cot') {
+    return (
+      <div style={FULLSCREEN_STYLE}>
+        <TopBar />
+        <div style={{ flex:1, minHeight:0, overflow:'hidden' }}><SentimentPanel /></div>
       </div>
     )
   }
 
   if (activeTab === 'livefeed') {
     return (
-      <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--t-surface-base)', color:'var(--t-text-primary)', fontFamily:'var(--t-font-sans)' }}>
+      <div style={FULLSCREEN_STYLE}>
         <TopBar />
-        <div style={{ flex:1, minHeight:0, overflow:'hidden' }}>
-          <LiveFeedPanel />
-        </div>
-      </div>
-    )
-  }
-    return (
-      <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--t-surface-base)', color:'var(--t-text-primary)', fontFamily:'var(--t-font-sans)' }}>
-        <TopBar />
-        <div style={{ flex:1, minHeight:0, overflow:'hidden' }}>
-          <SentimentPanel />
-        </div>
+        <div style={{ flex:1, minHeight:0, overflow:'hidden' }}><LiveFeedPanel /></div>
       </div>
     )
   }
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background:'var(--t-surface-base)', color:'var(--t-text-primary)', fontFamily:'var(--t-font-sans)' }}>
+    <div style={FULLSCREEN_STYLE}>
       <TopBar />
       <WatchlistBar />
       <SessionBar />
