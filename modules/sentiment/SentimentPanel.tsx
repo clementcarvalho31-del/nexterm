@@ -257,64 +257,6 @@ function TrendChart({ data, pair, years }: { data: SeasonalBar[]; pair: string; 
   )
 }
 
-  // Projection zone (last 2 months)
-  const projStart=x(NM+1); const projEnd=x(pts.length-1)
-
-  return (
-    <div style={{background:'rgba(255,255,255,.012)',borderRadius:8,border:'1px solid rgba(255,255,255,.055)',overflow:'hidden'}}>
-      <div style={{padding:'10px 16px 6px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'0.5px solid rgba(255,255,255,.05)'}}>
-        <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <span style={{fontSize:10,fontWeight:600,color:'#6a7d8f',letterSpacing:'.5px',textTransform:'uppercase' as const}}>Seasonal Trend</span>
-          <span style={{fontSize:10,fontWeight:700,color:'#c8d6e5',fontFamily:'IBM Plex Mono,monospace'}}>{pair}</span>
-          <span style={{fontSize:9,color:'#3d5060'}}>·</span>
-          <span style={{fontSize:9,color:'#4a5e72'}}>{years} ans</span>
-        </div>
-        <div style={{display:'flex',gap:14}}>
-          {[{c:'#38bdf8',l:'Trend cumulatif'},{c:'rgba(240,180,41,.6)',dash:true,l:'Maintenant'},{c:'rgba(139,92,246,.2)',bg:true,l:'Zone actuelle'}].map(({c,l,dash,bg})=>(
-            <div key={l} style={{display:'flex',alignItems:'center',gap:5}}>
-              {bg?<span style={{width:10,height:10,borderRadius:2,background:c,display:'inline-block'}}/>:<span style={{width:14,height:dash?0:2,borderBottom:dash?`1px dashed ${c}`:'none',background:dash?'none':c,display:'inline-block'}}/>}
-              <span style={{fontSize:8,color:'#3d5060'}}>{l}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',height:H,display:'block'}}>
-        <defs>
-          <linearGradient id="tg2" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.15"/>
-            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0"/>
-          </linearGradient>
-        </defs>
-        {/* Grid */}
-        {gridVals.map((v,i)=>{
-          const yg=y(v)
-          return <g key={i}>
-            <line x1={PL} y1={yg} x2={W-PR} y2={yg} stroke="rgba(255,255,255,.035)" strokeWidth="1"/>
-            <text x={PL-6} y={yg+3} fontSize="7" fill="#1e2c3d" textAnchor="end" fontFamily="IBM Plex Mono">{v.toFixed(2)}</text>
-          </g>
-        })}
-        {/* Month dividers */}
-        {data.map((_,i)=>{
-          const xm=x(i+0.5)
-          return <line key={i} x1={xm} y1={PT} x2={xm} y2={PT+IH} stroke="rgba(255,255,255,.02)" strokeWidth="0.5"/>
-        })}
-        {/* Current zone highlight */}
-        <rect x={projStart-16} y={PT} width={32} height={IH} fill="rgba(139,92,246,.06)" rx="0"/>
-        {/* Area */}
-        <path d={area} fill="url(#tg2)"/>
-        {/* Line */}
-        <path d={path} fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        {/* Now marker */}
-        <line x1={nowX} y1={PT} x2={nowX} y2={PT+IH} stroke="rgba(240,180,41,.55)" strokeWidth="1" strokeDasharray="3 3"/>
-        <text x={nowX} y={PT-5} fontSize="8" fill="#f0b429" textAnchor="middle" fontFamily="IBM Plex Mono">NOW</text>
-        {/* Month labels */}
-        {data.map((b,i)=>(
-          <text key={i} x={x(i+0.5)} y={H-8} fontSize="8" fill={i===NM?'#a78bfa':'#1e2c3d'} textAnchor="middle" fontWeight={i===NM?'700':'400'} fontFamily="IBM Plex Mono">{b.label}</text>
-        ))}
-      </svg>
-    </div>
-  )
-}
 
 // ── Monthly heatmap ────────────────────────────────────────────────────────────
 function MonthHeatmap({ data }: { data: SeasonalBar[] }) {
