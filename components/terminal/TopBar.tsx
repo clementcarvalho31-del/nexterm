@@ -70,7 +70,7 @@ export function TopBar() {
                   transition: 'all 150ms ease', letterSpacing: '-0.1px',
                 }}
               >
-                {item.dot === 'red' && (
+                {('dot' in item) && (
                   <span style={{
                     width: 4, height: 4, borderRadius: '50%', background: '#ef4444',
                     display: 'inline-block', boxShadow: '0 0 5px rgba(239,68,68,.7)',
