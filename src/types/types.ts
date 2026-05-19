@@ -22,7 +22,7 @@ export interface WSMessage<T = unknown> { type: WSMessageType; symbol?: string; 
 export type ConnectionStatus = 'connecting'|'connected'|'disconnected'|'error'
 
 // ─── UI ───────────────────────────────────────────────────────────────────────
-export type TabId = 'dashboard'|'cot'|'calendar'|'newsplay'|'seasonality'|'worldbook'|'liquidity'|'yields'|'flows'|'copilot'|'livefeed'
+export type TabId = 'dashboard'|'cot'|'calendar'|'newsplay'|'seasonality'|'worldbook'|'liquidity'|'yields'|'flows'|'copilot'|'livefeed'|'trackrecord'
 export interface Tab { id: TabId; label: string }
 
 // ─── News ─────────────────────────────────────────────────────────────────────
