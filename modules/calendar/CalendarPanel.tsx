@@ -596,4 +596,4 @@ export function CalendarPanel() {
       )}
     </div>
   )
-}Ò
+}
