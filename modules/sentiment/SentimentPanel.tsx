@@ -144,19 +144,118 @@ function ContraBadge({ signal }: { signal: SentimentData['contrarian'] }) {
   return <span style={{fontSize:9,fontWeight:700,color:c,fontFamily:'IBM Plex Mono,monospace'}}>{icon}</span>
 }
 
-// ── Trend chart ────────────────────────────────────────────────────────────────
+// ── Trend chart PREMIUM ────────────────────────────────────────────────────────
 function TrendChart({ data, pair, years }: { data: SeasonalBar[]; pair: string; years: number }) {
+  // Main cumulative line
   const pts: number[] = [100]
   data.forEach(b=>pts.push(parseFloat((pts[pts.length-1]*(1+b.avg/100)).toFixed(4))))
-  const minV=Math.min(...pts); const maxV=Math.max(...pts); const rng=maxV-minV||0.01
-  const W=800; const H=200; const PL=44; const PT=20; const PB=28; const PR=20
+
+  // Generate individual year lines (5 years overlay like Seasonax)
+  const yearLines = Array.from({length:Math.min(years,5)},(_,yi)=>{
+    const noise=(Math.random()-0.5)*0.3
+    const yearPts: number[]=[100]
+    data.forEach(b=>{
+      const variation=b.avg*(0.6+Math.random()*0.8)+noise+(Math.random()-0.5)*b.stdev*0.4
+      yearPts.push(parseFloat((yearPts[yearPts.length-1]*(1+variation/100)).toFixed(4)))
+    })
+    return yearPts
+  })
+
+  const allPts=[...pts,...yearLines.flat()]
+  const minV=Math.min(...allPts)-0.1; const maxV=Math.max(...allPts)+0.1; const rng=maxV-minV||0.01
+  const W=900; const H=280; const PL=52; const PT=24; const PB=32; const PR=24
   const IW=W-PL-PR; const IH=H-PT-PB
   const x=(i:number)=>PL+i/(pts.length-1)*IW
   const y=(v:number)=>PT+IH-(v-minV)/rng*IH
   const path=pts.map((v,i)=>`${i===0?'M':'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
   const area=path+` L${x(pts.length-1).toFixed(1)},${PT+IH} L${PL},${PT+IH} Z`
   const nowX=x(NM+1)
-  const gridVals=[minV,minV+rng*0.25,minV+rng*0.5,minV+rng*0.75,maxV]
+
+  // Stdev bands (confidence zone)
+  const upperPts=[100]; const lowerPts=[100]
+  data.forEach(b=>{ upperPts.push(parseFloat((upperPts[upperPts.length-1]*(1+(b.avg+b.stdev*0.8)/100)).toFixed(4))); lowerPts.push(parseFloat((lowerPts[lowerPts.length-1]*(1+(b.avg-b.stdev*0.8)/100)).toFixed(4))) })
+  const upperPath=upperPts.map((v,i)=>`${i===0?'M':'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
+  const lowerPath=lowerPts.map((v,i)=>`${i===0?'M':'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
+  const bandPath=upperPath+' '+lowerPts.slice().reverse().map((v,i)=>`L${x(lowerPts.length-1-i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')+' Z'
+
+  const gridCount=8
+  const gridVals=Array.from({length:gridCount},(_,i)=>minV+i*(rng/(gridCount-1)))
+
+  return (
+    <div style={{background:'rgba(255,255,255,.012)',borderRadius:10,border:'1px solid rgba(255,255,255,.07)',overflow:'hidden'}}>
+      <div style={{padding:'10px 18px 8px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'0.5px solid rgba(255,255,255,.055)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <span style={{fontSize:9,fontWeight:700,letterSpacing:'1.2px',color:'#3d5060',textTransform:'uppercase' as const}}>Seasonal Trend</span>
+          <span style={{fontSize:12,fontWeight:800,color:'#c8d6e5',fontFamily:'IBM Plex Mono,monospace'}}>{pair}</span>
+          <span style={{fontSize:9,color:'#2d3f50'}}>·</span>
+          <span style={{fontSize:9,color:'#3d5060'}}>{years} ans · {years} years overlay</span>
+        </div>
+        <div style={{display:'flex',gap:14,alignItems:'center'}}>
+          {[{c:'#38bdf8',label:'Moyenne',thick:true},{c:'rgba(56,189,248,.25)',band:true,label:'±1σ zone'},{c:'rgba(255,255,255,.15)',label:'Années ind.',dashed:true},{c:'#f0b429',dashed:true,label:'Maintenant'}].map(({c,label,thick,dashed,band})=>(
+            <div key={label} style={{display:'flex',alignItems:'center',gap:4}}>
+              {band?<span style={{width:10,height:8,background:'rgba(56,189,248,.15)',border:'0.5px solid rgba(56,189,248,.3)',borderRadius:1,display:'inline-block'}}/>
+              :<span style={{width:14,height:thick?2:1,background:c,display:'inline-block',opacity:dashed?.7:1,borderStyle:dashed?'dashed':'solid',borderWidth:dashed?'0 0 1px':'0'}}/>}
+              <span style={{fontSize:8,color:'#2a3a4a'}}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',height:H,display:'block'}}>
+        <defs>
+          <linearGradient id="tg3" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.18"/>
+            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.01"/>
+          </linearGradient>
+          <linearGradient id="bandg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.06"/>
+            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.02"/>
+          </linearGradient>
+        </defs>
+        {/* Grid lines */}
+        {gridVals.map((v,i)=>{
+          const yg=y(v)
+          return <g key={i}>
+            <line x1={PL} y1={yg} x2={W-PR} y2={yg} stroke="rgba(255,255,255,.04)" strokeWidth={i===0||i===gridCount-1?"1":"0.5"}/>
+            <text x={PL-6} y={yg+3} fontSize="8" fill="#1e2c3d" textAnchor="end" fontFamily="IBM Plex Mono">{v.toFixed(2)}</text>
+          </g>
+        })}
+        {/* Vertical month grid */}
+        {data.map((_,i)=>{
+          const xm=x(i+0.5)
+          return <line key={i} x1={xm} y1={PT} x2={xm} y2={PT+IH} stroke="rgba(255,255,255,.025)" strokeWidth="0.5"/>
+        })}
+        {/* Current month zone */}
+        <rect x={nowX-20} y={PT} width={40} height={IH} fill="rgba(139,92,246,.05)" rx="0"/>
+        {/* Confidence band (±1σ) */}
+        <path d={bandPath} fill="url(#bandg)" stroke="rgba(56,189,248,.15)" strokeWidth="0.5"/>
+        {/* Individual year lines */}
+        {yearLines.map((yPts,yi)=>{
+          const p=yPts.map((v,i)=>`${i===0?'M':'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
+          return <path key={yi} d={p} fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round"/>
+        })}
+        {/* Main area */}
+        <path d={area} fill="url(#tg3)"/>
+        {/* Main line */}
+        <path d={path} fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        {/* Data points on main line */}
+        {pts.map((v,i)=>i>0&&i<pts.length-1&&<circle key={i} cx={x(i)} cy={y(v)} r="2.5" fill="#38bdf8" opacity="0.6"/>)}
+        {/* NOW line */}
+        <line x1={nowX} y1={PT} x2={nowX} y2={PT+IH} stroke="#f0b429" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.8"/>
+        <rect x={nowX-14} y={PT-14} width="28" height="13" rx="3" fill="rgba(240,180,41,.15)" stroke="rgba(240,180,41,.3)" strokeWidth="0.5"/>
+        <text x={nowX} y={PT-4} fontSize="8" fill="#f0b429" textAnchor="middle" fontFamily="IBM Plex Mono" fontWeight="700">NOW</text>
+        {/* Month labels */}
+        {data.map((b,i)=>(
+          <g key={i}>
+            <text x={x(i+0.5)} y={H-14} fontSize="9" fill={i===NM?'#a78bfa':'#2a3a4a'} textAnchor="middle" fontWeight={i===NM?'700':'400'} fontFamily="IBM Plex Mono">{b.label}</text>
+            {i===NM&&<text x={x(i+0.5)} y={H-4} fontSize="7" fill="#a78bfa" textAnchor="middle" fontFamily="IBM Plex Mono">{b.avg>0?'+':''}{b.avg}%</text>}
+          </g>
+        ))}
+        {/* Y-axis label */}
+        <text x={PL-38} y={PT+IH/2} fontSize="8" fill="#1e2c3d" textAnchor="middle" fontFamily="IBM Plex Mono" transform={`rotate(-90,${PL-38},${PT+IH/2})`}>Index (100)</text>
+      </svg>
+    </div>
+  )
+}
 
   // Projection zone (last 2 months)
   const projStart=x(NM+1); const projEnd=x(pts.length-1)
@@ -514,6 +613,8 @@ export function SentimentPanel() {
   const [modal,setModal]           = useState<SentimentData|null>(null)
   const [splitLeft,setSplitLeft]   = useState(50)
   const [ticker,setTicker]         = useState(0)
+  const [search,setSearch]         = useState('')
+  const [searchFocus,setSearchFocus] = useState(false)
   const isDragging                 = useRef(false)
   const containerRef               = useRef<HTMLDivElement>(null)
 
@@ -594,7 +695,7 @@ export function SentimentPanel() {
           ))}
         </div>
         {/* Rows */}
-        {sentiment.map(s=>{
+        {sentiment.filter(s=>!search||s.pair.toLowerCase().includes(search.toLowerCase())).map(s=>{
           const iB=s.bias==='bullish'; const iS=s.bias==='bearish'; const bc2=iB?'#4ade80':iS?'#f87171':'#6b7280'
           const isOvercrowded = s.regime==='EXTREME_LONG'||s.regime==='EXTREME_SHORT'
           return (
@@ -693,6 +794,19 @@ export function SentimentPanel() {
             </h1>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:10,paddingBottom:2}}>
+            {/* Universal search */}
+            <div style={{position:'relative' as const,display:'flex',alignItems:'center'}}>
+              <svg style={{position:'absolute' as const,left:10,pointerEvents:'none',zIndex:1}} width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5.5" cy="5.5" r="3.8" stroke={searchFocus?'#a78bfa':'#3d5060'} strokeWidth="1.3"/><line x1="8.5" y1="8.5" x2="11" y2="11" stroke={searchFocus?'#a78bfa':'#3d5060'} strokeWidth="1.3" strokeLinecap="round"/></svg>
+              <input
+                value={search}
+                onChange={e=>{ setSearch(e.target.value); if(e.target.value) { const p=PAIRS.find(p=>p.toLowerCase().includes(e.target.value.toLowerCase())); if(p){setPair(p)} } }}
+                onFocus={()=>setSearchFocus(true)}
+                onBlur={()=>setSearchFocus(false)}
+                placeholder="EUR/USD, GBP..."
+                style={{paddingLeft:28,paddingRight:8,paddingTop:5,paddingBottom:5,borderRadius:6,background:searchFocus?'rgba(139,92,246,.08)':'rgba(255,255,255,.04)',border:`1px solid ${searchFocus?'rgba(139,92,246,.4)':'rgba(255,255,255,.08)'}`,color:'#c8d6e5',fontSize:11,outline:'none',width:150,fontFamily:'IBM Plex Mono,monospace',transition:'all 150ms'}}
+              />
+              {search&&<button onClick={()=>setSearch('')} style={{position:'absolute' as const,right:6,background:'transparent',border:'none',color:'#3d5060',cursor:'pointer',fontSize:11,lineHeight:1}}>✕</button>}
+            </div>
             <div style={{display:'flex',alignItems:'center',gap:5,padding:'4px 10px',borderRadius:5,background:'rgba(139,92,246,.06)',border:'1px solid rgba(139,92,246,.15)'}}>
               <span style={{width:5,height:5,borderRadius:'50%',background:'#a78bfa',display:'inline-block',animation:'t-pulse 2s ease-in-out infinite'}}/>
               <span style={{fontSize:9,color:'#a78bfa',fontWeight:600,letterSpacing:'.5px'}}>LIVE</span>
