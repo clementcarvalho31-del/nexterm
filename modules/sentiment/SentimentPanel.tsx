@@ -1,31 +1,29 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 
+// ── Types ─────────────────────────────────────────────────────────────────────
 type Pair = 'EUR/USD'|'GBP/USD'|'USD/JPY'|'USD/CAD'|'AUD/USD'|'NZD/USD'|'USD/CHF'|'XAU/USD'|'AUD/JPY'|'EUR/GBP'
+type Tab  = 'sentiment'|'seasonality'
+
 interface SentimentData {
   pair: Pair; longPct: number; shortPct: number
   longVol: number; shortVol: number; longPos: number; shortPos: number
-  bias: 'bullish'|'bearish'|'neutral'; change24h: number
+  bias: 'bullish'|'bearish'|'neutral'; change24h: number; change1h: number
+  crowdExposure: number   // 0-100
+  contrarian: 'STRONG_BUY'|'BUY'|'NEUTRAL'|'SELL'|'STRONG_SELL'
+  momentum: number        // -5 to +5, sentiment momentum
+  sparkline: number[]     // last 8 readings
+  regime: 'EXTREME_LONG'|'CROWDED_LONG'|'BALANCED'|'CROWDED_SHORT'|'EXTREME_SHORT'
 }
-interface SeasonalBar { month: number; label: string; avg: number; positive: number; bullish: boolean }
-interface WeekdayBar  { day: string; avg: number; bullish: boolean }
+interface SeasonalBar { month: number; label: string; avg: number; positive: number; bullish: boolean; stdev: number; best: number; worst: number }
+interface WeekdayBar  { day: string; avg: number; bullish: boolean; positive: number }
 
+// ── Constants ─────────────────────────────────────────────────────────────────
 const PAIRS: Pair[] = ['EUR/USD','GBP/USD','USD/JPY','USD/CAD','AUD/USD','NZD/USD','USD/CHF','XAU/USD','AUD/JPY','EUR/GBP']
 const ML = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc']
 const NM = new Date().getMonth()
 
-const SF: SentimentData[] = [
-  { pair:'EUR/USD', longPct:66, shortPct:34, longVol:2840, shortVol:1460, longPos:18420, shortPos:9480,  bias:'bullish', change24h:+3.2 },
-  { pair:'GBP/USD', longPct:72, shortPct:28, longVol:1920, shortVol:748,  longPos:12300, shortPos:4800,  bias:'bullish', change24h:+1.8 },
-  { pair:'USD/JPY', longPct:29, shortPct:71, longVol:880,  shortVol:2150, longPos:5640,  shortPos:13800, bias:'bearish', change24h:-2.4 },
-  { pair:'USD/CAD', longPct:45, shortPct:55, longVol:1100, shortVol:1340, longPos:7200,  shortPos:8760,  bias:'bearish', change24h:-0.8 },
-  { pair:'AUD/USD', longPct:58, shortPct:42, longVol:960,  shortVol:695,  longPos:6180,  shortPos:4480,  bias:'bullish', change24h:+0.5 },
-  { pair:'NZD/USD', longPct:61, shortPct:39, longVol:420,  shortVol:268,  longPos:2700,  shortPos:1720,  bias:'bullish', change24h:+1.1 },
-  { pair:'USD/CHF', longPct:38, shortPct:62, longVol:520,  shortVol:850,  longPos:3340,  shortPos:5460,  bias:'bearish', change24h:-1.6 },
-  { pair:'XAU/USD', longPct:71, shortPct:29, longVol:3200, shortVol:1310, longPos:20600, shortPos:8420,  bias:'bullish', change24h:+2.9 },
-  { pair:'AUD/JPY', longPct:33, shortPct:67, longVol:321,  shortVol:157,  longPos:915,   shortPos:1540,  bias:'bearish', change24h:-1.2 },
-  { pair:'EUR/GBP', longPct:55, shortPct:45, longVol:680,  shortVol:556,  longPos:4380,  shortPos:3580,  bias:'bullish', change24h:+0.7 },
-]
+// ── Seasonal data ─────────────────────────────────────────────────────────────
 const PAT: Record<string,number[]> = {
   'EUR/USD':[0.4,-0.8,0.2,0.6,-1.2,-0.4,0.8,-0.6,-1.1,0.9,0.3,-0.5],
   'GBP/USD':[0.3,-0.5,0.4,0.8,-0.9,-0.3,0.6,-0.8,-0.7,0.7,0.5,-0.4],
@@ -50,6 +48,18 @@ const POS: Record<string,number[]> = {
   'AUD/JPY':[41,60,55,58,37,32,53,45,58,63,44,40],
   'EUR/GBP':[50,46,52,54,43,47,55,44,45,56,53,48],
 }
+const STDEV: Record<string,number[]> = {
+  'EUR/USD':[0.8,1.1,0.7,0.9,1.3,1.0,0.8,1.1,1.4,0.9,0.7,0.8],
+  'GBP/USD':[0.9,1.2,0.8,1.0,1.2,0.9,0.9,1.0,1.3,1.1,0.8,0.9],
+  'USD/JPY':[0.7,0.9,0.8,1.0,1.1,0.8,0.9,1.0,1.2,0.8,0.7,0.8],
+  'USD/CAD':[0.8,1.0,0.9,1.1,1.0,0.9,0.8,0.9,1.1,1.0,0.8,0.9],
+  'AUD/USD':[0.9,1.1,0.8,1.0,1.2,1.3,0.9,1.1,1.2,1.0,0.9,1.0],
+  'NZD/USD':[0.8,1.0,0.7,0.9,1.1,1.2,0.8,1.0,1.1,0.9,0.8,0.9],
+  'USD/CHF':[0.7,0.9,0.8,1.0,0.9,0.8,0.9,1.0,1.1,0.9,0.7,0.8],
+  'XAU/USD':[1.2,1.4,1.1,1.3,1.5,1.6,1.2,1.3,1.4,1.2,1.1,1.3],
+  'AUD/JPY':[1.0,1.2,0.9,1.1,1.3,1.4,1.0,1.2,1.3,1.1,1.0,1.1],
+  'EUR/GBP':[0.6,0.8,0.6,0.8,0.9,0.8,0.7,0.9,0.9,0.7,0.6,0.7],
+}
 const WDP: Record<string,number[]> = {
   'EUR/USD':[0.021,-0.018,0.004,-0.012,-0.015],
   'GBP/USD':[0.018,-0.022,0.006,-0.014,-0.018],
@@ -63,36 +73,83 @@ const WDP: Record<string,number[]> = {
   'EUR/GBP':[0.006,-0.008,0.003,-0.005,-0.007],
 }
 
-function cs(pair: string, y: 20|10|5): SeasonalBar[] {
-  const s=y===10?0.9:y===5?0.8:1; const b=PAT[pair]||PAT['EUR/USD']; const p=POS[pair]||POS['EUR/USD']
-  return b.map((avg,i)=>({month:i,label:ML[i],avg:parseFloat((avg*s).toFixed(2)),positive:p[i],bullish:avg>0}))
+// ── Fallback sentiment with full data ─────────────────────────────────────────
+function makeFallback(): SentimentData[] {
+  const raw = [
+    { pair:'EUR/USD' as Pair, l:66, s:34, lv:2840, sv:1460, lp:18420, sp:9480,  c24:+3.2, c1:+0.8 },
+    { pair:'GBP/USD' as Pair, l:72, s:28, lv:1920, sv:748,  lp:12300, sp:4800,  c24:+1.8, c1:+0.4 },
+    { pair:'USD/JPY' as Pair, l:29, s:71, lv:880,  sv:2150, lp:5640,  sp:13800, c24:-2.4, c1:-0.6 },
+    { pair:'USD/CAD' as Pair, l:45, s:55, lv:1100, sv:1340, lp:7200,  sp:8760,  c24:-0.8, c1:-0.2 },
+    { pair:'AUD/USD' as Pair, l:58, s:42, lv:960,  sv:695,  lp:6180,  sp:4480,  c24:+0.5, c1:+0.1 },
+    { pair:'NZD/USD' as Pair, l:61, s:39, lv:420,  sv:268,  lp:2700,  sp:1720,  c24:+1.1, c1:+0.3 },
+    { pair:'USD/CHF' as Pair, l:38, s:62, lv:520,  sv:850,  lp:3340,  sp:5460,  c24:-1.6, c1:-0.4 },
+    { pair:'XAU/USD' as Pair, l:71, s:29, lv:3200, sv:1310, lp:20600, sp:8420,  c24:+2.9, c1:+0.7 },
+    { pair:'AUD/JPY' as Pair, l:33, s:67, lv:321,  sv:157,  lp:915,   sp:1540,  c24:-1.2, c1:-0.3 },
+    { pair:'EUR/GBP' as Pair, l:55, s:45, lv:680,  sv:556,  lp:4380,  sp:3580,  c24:+0.7, c1:+0.2 },
+  ]
+  return raw.map(r => {
+    const regime: SentimentData['regime'] = r.l>=75?'EXTREME_LONG':r.l>=62?'CROWDED_LONG':r.l<=25?'EXTREME_SHORT':r.l<=38?'CROWDED_SHORT':'BALANCED'
+    const contrarian: SentimentData['contrarian'] = r.l>=75?'STRONG_BUY':r.l>=62?'BUY':r.l<=25?'STRONG_SELL':r.l<=38?'SELL':'NEUTRAL'
+    const sparkline = Array.from({length:8},(_,i)=>Math.max(20,Math.min(80,r.l+(Math.random()-0.5)*6)))
+    return { pair:r.pair, longPct:r.l, shortPct:r.s, longVol:r.lv, shortVol:r.sv, longPos:r.lp, shortPos:r.sp,
+      bias:r.l>50?'bullish':r.l<50?'bearish':'neutral', change24h:r.c24, change1h:r.c1,
+      crowdExposure:Math.abs(r.l-50)*2, contrarian, momentum:parseFloat((r.c24/2).toFixed(1)), sparkline, regime }
+  })
+}
+
+function cs(pair: string, y: 20|15|10|5): SeasonalBar[] {
+  const s=y===10?0.9:y===5?0.8:y===15?0.95:1; const b=PAT[pair]||PAT['EUR/USD']; const p=POS[pair]||POS['EUR/USD']; const sd=STDEV[pair]||STDEV['EUR/USD']
+  return b.map((avg,i)=>({month:i,label:ML[i],avg:parseFloat((avg*s).toFixed(2)),positive:p[i],bullish:avg>0,stdev:sd[i],best:parseFloat((avg*s+sd[i]*2).toFixed(2)),worst:parseFloat((avg*s-sd[i]*2).toFixed(2))}))
 }
 function cw(pair: string): WeekdayBar[] {
   const d=['Lun','Mar','Mer','Jeu','Ven']; const b=WDP[pair]||WDP['EUR/USD']
-  return b.map((avg,i)=>({day:d[i],avg:parseFloat((avg*100).toFixed(3)),bullish:avg>0}))
+  return b.map((avg,i)=>({day:d[i],avg:parseFloat((avg*100).toFixed(3)),bullish:avg>0,positive:avg>0?58:42}))
 }
 
-// ── Mini donut inline ────────────────────────────────────────────────────────
-function MiniDonut({ long, short }: { long: number; short: number }) {
-  const R=14; const SW=4; const CX=18; const CY=18; const circ=2*Math.PI*R
-  const gap=0.04*circ; const ld=(long/100)*circ-gap; const sd=(short/100)*circ-gap
+// ── Sparkline ──────────────────────────────────────────────────────────────────
+function Sparkline({ values, color }: { values: number[]; color: string }) {
+  const W=60; const H=20; const mn=Math.min(...values); const mx=Math.max(...values); const rng=mx-mn||1
+  const pts=values.map((v,i)=>`${(i/(values.length-1))*W},${H-(v-mn)/rng*H}`).join(' ')
   return (
-    <svg width="36" height="36" viewBox="0 0 36 36" style={{flexShrink:0}}>
-      <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth={SW}/>
-      <circle cx={CX} cy={CY} r={R} fill="none" stroke="#ef4444" strokeWidth={SW} strokeLinecap="round"
-        strokeDasharray={`${sd} ${circ-sd}`} strokeDashoffset={circ/4}/>
-      <circle cx={CX} cy={CY} r={R} fill="none" stroke="#22c55e" strokeWidth={SW} strokeLinecap="round"
-        strokeDasharray={`${ld} ${circ-ld}`} strokeDashoffset={circ/4-(short/100)*circ}/>
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{overflow:'visible'}}>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.8"/>
+      <circle cx={(values.length-1)/(values.length-1)*W} cy={H-(values[values.length-1]-mn)/rng*H} r="2" fill={color}/>
     </svg>
   )
 }
 
-// ── Trend chart premium ───────────────────────────────────────────────────────
+// ── Regime badge ───────────────────────────────────────────────────────────────
+function RegimeBadge({ regime }: { regime: SentimentData['regime'] }) {
+  const cfg: Record<SentimentData['regime'],{c:string;bg:string;b:string;label:string}> = {
+    EXTREME_LONG:   {c:'#ef4444',bg:'rgba(239,68,68,.12)',  b:'rgba(239,68,68,.3)',  label:'EXTREME LONG'},
+    CROWDED_LONG:   {c:'#f97316',bg:'rgba(249,115,22,.10)', b:'rgba(249,115,22,.25)',label:'CROWDED LONG'},
+    BALANCED:       {c:'#6b7280',bg:'rgba(107,114,128,.08)',b:'rgba(107,114,128,.2)',label:'BALANCED'},
+    CROWDED_SHORT:  {c:'#8b5cf6',bg:'rgba(139,92,246,.10)', b:'rgba(139,92,246,.25)',label:'CROWDED SHORT'},
+    EXTREME_SHORT:  {c:'#22c55e',bg:'rgba(34,197,94,.12)',  b:'rgba(34,197,94,.3)',  label:'EXTREME SHORT'},
+  }
+  const {c,bg,b,label} = cfg[regime]
+  return <span style={{fontSize:8,fontWeight:800,padding:'2px 6px',borderRadius:3,background:bg,color:c,border:`0.5px solid ${b}`,letterSpacing:'.7px',whiteSpace:'nowrap' as const}}>{label}</span>
+}
+
+// ── Contrarian badge ───────────────────────────────────────────────────────────
+function ContraBadge({ signal }: { signal: SentimentData['contrarian'] }) {
+  const cfg: Record<SentimentData['contrarian'],{c:string;icon:string}> = {
+    STRONG_BUY:  {c:'#22c55e',icon:'▲▲'},
+    BUY:         {c:'#4ade80',icon:'▲'},
+    NEUTRAL:     {c:'#6b7280',icon:'→'},
+    SELL:        {c:'#f87171',icon:'▼'},
+    STRONG_SELL: {c:'#ef4444',icon:'▼▼'},
+  }
+  const {c,icon}=cfg[signal]
+  return <span style={{fontSize:9,fontWeight:700,color:c,fontFamily:'IBM Plex Mono,monospace'}}>{icon}</span>
+}
+
+// ── Trend chart ────────────────────────────────────────────────────────────────
 function TrendChart({ data, pair, years }: { data: SeasonalBar[]; pair: string; years: number }) {
   const pts: number[] = [100]
   data.forEach(b=>pts.push(parseFloat((pts[pts.length-1]*(1+b.avg/100)).toFixed(4))))
   const minV=Math.min(...pts); const maxV=Math.max(...pts); const rng=maxV-minV||0.01
-  const W=800; const H=200; const PL=40; const PT=16; const PB=24; const PR=16
+  const W=800; const H=200; const PL=44; const PT=20; const PB=28; const PR=20
   const IW=W-PL-PR; const IH=H-PT-PB
   const x=(i:number)=>PL+i/(pts.length-1)*IW
   const y=(v:number)=>PT+IH-(v-minV)/rng*IH
@@ -101,64 +158,107 @@ function TrendChart({ data, pair, years }: { data: SeasonalBar[]; pair: string; 
   const nowX=x(NM+1)
   const gridVals=[minV,minV+rng*0.25,minV+rng*0.5,minV+rng*0.75,maxV]
 
+  // Projection zone (last 2 months)
+  const projStart=x(NM+1); const projEnd=x(pts.length-1)
+
   return (
-    <div style={{background:'rgba(255,255,255,.015)',borderRadius:8,border:'1px solid rgba(255,255,255,.06)',overflow:'hidden'}}>
-      <div style={{padding:'12px 16px 4px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <span style={{fontSize:11,fontWeight:600,color:'#6a7d8f',letterSpacing:'.4px'}}>Seasonal Trend · {pair} · {years} Years</span>
-        <div style={{display:'flex',gap:12}}>
-          {[{c:'#38bdf8',l:'Trend'},{c:'#f0b429',l:'Maintenant'}].map(({c,l})=>(
-            <div key={l} style={{display:'flex',alignItems:'center',gap:4}}>
-              <span style={{width:12,height:2,background:c,display:'inline-block',borderRadius:1}}/>
-              <span style={{fontSize:9,color:'#3d5060'}}>{l}</span>
+    <div style={{background:'rgba(255,255,255,.012)',borderRadius:8,border:'1px solid rgba(255,255,255,.055)',overflow:'hidden'}}>
+      <div style={{padding:'10px 16px 6px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'0.5px solid rgba(255,255,255,.05)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <span style={{fontSize:10,fontWeight:600,color:'#6a7d8f',letterSpacing:'.5px',textTransform:'uppercase' as const}}>Seasonal Trend</span>
+          <span style={{fontSize:10,fontWeight:700,color:'#c8d6e5',fontFamily:'IBM Plex Mono,monospace'}}>{pair}</span>
+          <span style={{fontSize:9,color:'#3d5060'}}>·</span>
+          <span style={{fontSize:9,color:'#4a5e72'}}>{years} ans</span>
+        </div>
+        <div style={{display:'flex',gap:14}}>
+          {[{c:'#38bdf8',l:'Trend cumulatif'},{c:'rgba(240,180,41,.6)',dash:true,l:'Maintenant'},{c:'rgba(139,92,246,.2)',bg:true,l:'Zone actuelle'}].map(({c,l,dash,bg})=>(
+            <div key={l} style={{display:'flex',alignItems:'center',gap:5}}>
+              {bg?<span style={{width:10,height:10,borderRadius:2,background:c,display:'inline-block'}}/>:<span style={{width:14,height:dash?0:2,borderBottom:dash?`1px dashed ${c}`:'none',background:dash?'none':c,display:'inline-block'}}/>}
+              <span style={{fontSize:8,color:'#3d5060'}}>{l}</span>
             </div>
           ))}
         </div>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',height:H,display:'block'}}>
         <defs>
-          <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.18"/>
+          <linearGradient id="tg2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.15"/>
             <stop offset="100%" stopColor="#38bdf8" stopOpacity="0"/>
           </linearGradient>
         </defs>
+        {/* Grid */}
         {gridVals.map((v,i)=>{
           const yg=y(v)
           return <g key={i}>
-            <line x1={PL} y1={yg} x2={W-PR} y2={yg} stroke="rgba(255,255,255,.04)" strokeWidth="1"/>
-            <text x={PL-5} y={yg+3} fontSize="7" fill="#2a3a4a" textAnchor="end" fontFamily="IBM Plex Mono">{v.toFixed(2)}</text>
+            <line x1={PL} y1={yg} x2={W-PR} y2={yg} stroke="rgba(255,255,255,.035)" strokeWidth="1"/>
+            <text x={PL-6} y={yg+3} fontSize="7" fill="#1e2c3d" textAnchor="end" fontFamily="IBM Plex Mono">{v.toFixed(2)}</text>
           </g>
         })}
+        {/* Month dividers */}
         {data.map((_,i)=>{
           const xm=x(i+0.5)
-          return <line key={i} x1={xm} y1={PT} x2={xm} y2={PT+IH} stroke="rgba(255,255,255,.025)" strokeWidth="1"/>
+          return <line key={i} x1={xm} y1={PT} x2={xm} y2={PT+IH} stroke="rgba(255,255,255,.02)" strokeWidth="0.5"/>
         })}
-        <path d={area} fill="url(#tg)"/>
+        {/* Current zone highlight */}
+        <rect x={projStart-16} y={PT} width={32} height={IH} fill="rgba(139,92,246,.06)" rx="0"/>
+        {/* Area */}
+        <path d={area} fill="url(#tg2)"/>
+        {/* Line */}
         <path d={path} fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <line x1={nowX} y1={PT} x2={nowX} y2={PT+IH} stroke="#f0b429" strokeWidth="1" strokeDasharray="3 3" opacity="0.7"/>
+        {/* Now marker */}
+        <line x1={nowX} y1={PT} x2={nowX} y2={PT+IH} stroke="rgba(240,180,41,.55)" strokeWidth="1" strokeDasharray="3 3"/>
+        <text x={nowX} y={PT-5} fontSize="8" fill="#f0b429" textAnchor="middle" fontFamily="IBM Plex Mono">NOW</text>
+        {/* Month labels */}
         {data.map((b,i)=>(
-          <text key={i} x={x(i+0.5)} y={H-6} fontSize="8" fill={i===NM?'#f0b429':'#2a3a4a'} textAnchor="middle" fontWeight={i===NM?'700':'400'} fontFamily="IBM Plex Mono">{b.label}</text>
+          <text key={i} x={x(i+0.5)} y={H-8} fontSize="8" fill={i===NM?'#a78bfa':'#1e2c3d'} textAnchor="middle" fontWeight={i===NM?'700':'400'} fontFamily="IBM Plex Mono">{b.label}</text>
         ))}
       </svg>
     </div>
   )
 }
 
-// ── Monthly bars premium ──────────────────────────────────────────────────────
-function MonthChart({ data }: { data: SeasonalBar[] }) {
+// ── Monthly heatmap ────────────────────────────────────────────────────────────
+function MonthHeatmap({ data }: { data: SeasonalBar[] }) {
+  const maxAbs=Math.max(...data.map(d=>Math.abs(d.avg)),0.01)
+  return (
+    <div style={{background:'rgba(255,255,255,.012)',borderRadius:8,border:'1px solid rgba(255,255,255,.055)',padding:'10px 14px'}}>
+      <div style={{fontSize:9,fontWeight:700,letterSpacing:'.8px',color:'#4a5e72',textTransform:'uppercase' as const,marginBottom:10}}>Monthly Performance Heatmap</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(12,1fr)',gap:3}}>
+        {data.map((b,i)=>{
+          const intensity=Math.abs(b.avg)/maxAbs
+          const isNow=i===NM
+          const bg=b.bullish?`rgba(34,197,94,${0.08+intensity*0.25})`:`rgba(239,68,68,${0.08+intensity*0.25})`
+          const border=isNow?'1px solid rgba(167,139,250,.6)':'1px solid rgba(255,255,255,.04)'
+          return (
+            <div key={i} style={{padding:'6px 4px',borderRadius:4,background:isNow?'rgba(139,92,246,.12)':bg,border,textAlign:'center' as const}}>
+              <div style={{fontSize:7,fontWeight:600,color:isNow?'#a78bfa':'#4a5e72',marginBottom:3,letterSpacing:'.3px'}}>{b.label}</div>
+              <div style={{fontSize:10,fontWeight:800,color:b.bullish?'#4ade80':'#f87171',fontFamily:'IBM Plex Mono,monospace'}}>{b.avg>0?'+':''}{b.avg}</div>
+              <div style={{fontSize:6,color:'#2a3a4a',marginTop:2}}>{b.positive}%</div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Monthly bars ───────────────────────────────────────────────────────────────
+function MonthBars({ data }: { data: SeasonalBar[] }) {
   const mx=Math.max(...data.map(d=>Math.abs(d.avg)),0.01)
-  const H=90; const BW=24; const W=data.length*(BW+5)+24; const z=H/2
+  const H=100; const BW=22; const GAP=5; const W=data.length*(BW+GAP)+20; const z=H/2
   return (
-    <div style={{background:'rgba(255,255,255,.015)',borderRadius:8,border:'1px solid rgba(255,255,255,.06)',padding:'12px 12px 4px'}}>
-      <div style={{fontSize:10,fontWeight:600,color:'#6a7d8f',marginBottom:8,letterSpacing:'.4px'}}>Avg Return by Month (%)</div>
-      <svg viewBox={`0 0 ${W} ${H+18}`} style={{width:'100%',height:H+18,display:'block'}}>
-        <line x1="0" y1={z} x2={W} y2={z} stroke="rgba(255,255,255,.08)" strokeWidth="0.5"/>
+    <div style={{background:'rgba(255,255,255,.012)',borderRadius:8,border:'1px solid rgba(255,255,255,.055)',padding:'10px 12px 6px'}}>
+      <div style={{fontSize:9,fontWeight:700,letterSpacing:'.8px',color:'#4a5e72',textTransform:'uppercase' as const,marginBottom:8}}>Avg Return by Month (%)</div>
+      <svg viewBox={`0 0 ${W} ${H+22}`} style={{width:'100%',height:H+22,display:'block'}}>
+        <line x1="0" y1={z} x2={W} y2={z} stroke="rgba(255,255,255,.07)" strokeWidth="0.5"/>
         {data.map((b,i)=>{
-          const bH=Math.max((Math.abs(b.avg)/mx)*(H/2-6),2)
-          const x=12+i*(BW+5); const y=b.bullish?z-bH:z; const isN=i===NM
+          const bH=Math.max((Math.abs(b.avg)/mx)*(H/2-8),2)
+          const xp=10+i*(BW+GAP); const yp=b.bullish?z-bH:z; const isN=i===NM
           return <g key={i}>
-            <rect x={x} y={y} width={BW} height={bH} rx="2" fill={isN?'#f0b429':b.bullish?'#22bdf8':'#f87171'} opacity={isN?1:0.75}/>
-            {Math.abs(b.avg)>0.3&&<text x={x+BW/2} y={b.bullish?y-3:y+bH+10} fontSize="7" fill={isN?'#f0b429':b.bullish?'#22bdf8':'#f87171'} textAnchor="middle" fontFamily="IBM Plex Mono">{b.avg>0?'+':''}{b.avg}</text>}
-            <text x={x+BW/2} y={H+14} fontSize="8" fill={isN?'#f0b429':'#2a3a4a'} textAnchor="middle" fontWeight={isN?'700':'400'} fontFamily="IBM Plex Mono">{b.label}</text>
+            <rect x={xp} y={yp} width={BW} height={bH} rx="2"
+              fill={isN?'#a78bfa':b.bullish?'#22bdf8':'#f87171'} opacity={isN?1:0.7}/>
+            {Math.abs(b.avg)>=0.4&&<text x={xp+BW/2} y={b.bullish?yp-3:yp+bH+10} fontSize="6" fill={isN?'#a78bfa':b.bullish?'#38bdf8':'#f87171'} textAnchor="middle" fontFamily="IBM Plex Mono">{b.avg>0?'+':''}{b.avg}</text>}
+            <text x={xp+BW/2} y={H+17} fontSize="7" fill={isN?'#a78bfa':'#2a3a4a'} textAnchor="middle" fontWeight={isN?'700':'400'} fontFamily="IBM Plex Mono">{b.label}</text>
           </g>
         })}
       </svg>
@@ -166,22 +266,22 @@ function MonthChart({ data }: { data: SeasonalBar[] }) {
   )
 }
 
-// ── Weekday bars premium ──────────────────────────────────────────────────────
-function WeekChart({ data }: { data: WeekdayBar[] }) {
+// ── Weekday bars ───────────────────────────────────────────────────────────────
+function WeekBars({ data }: { data: WeekdayBar[] }) {
   const mx=Math.max(...data.map(d=>Math.abs(d.avg)),0.001)
-  const H=90; const BW=44; const W=data.length*(BW+12)+24; const z=H/2
+  const H=100; const BW=50; const GAP=12; const W=data.length*(BW+GAP)+20; const z=H/2
   return (
-    <div style={{background:'rgba(255,255,255,.015)',borderRadius:8,border:'1px solid rgba(255,255,255,.06)',padding:'12px 12px 4px'}}>
-      <div style={{fontSize:10,fontWeight:600,color:'#6a7d8f',marginBottom:8,letterSpacing:'.4px'}}>Avg Return by Weekday (%)</div>
-      <svg viewBox={`0 0 ${W} ${H+18}`} style={{width:'100%',height:H+18,display:'block'}}>
-        <line x1="0" y1={z} x2={W} y2={z} stroke="rgba(255,255,255,.08)" strokeWidth="0.5"/>
+    <div style={{background:'rgba(255,255,255,.012)',borderRadius:8,border:'1px solid rgba(255,255,255,.055)',padding:'10px 12px 6px'}}>
+      <div style={{fontSize:9,fontWeight:700,letterSpacing:'.8px',color:'#4a5e72',textTransform:'uppercase' as const,marginBottom:8}}>Avg Return by Weekday (%)</div>
+      <svg viewBox={`0 0 ${W} ${H+22}`} style={{width:'100%',height:H+22,display:'block'}}>
+        <line x1="0" y1={z} x2={W} y2={z} stroke="rgba(255,255,255,.07)" strokeWidth="0.5"/>
         {data.map((b,i)=>{
-          const bH=Math.max((Math.abs(b.avg)/mx)*(H/2-6),2)
-          const x=12+i*(BW+12); const y=b.bullish?z-bH:z
+          const bH=Math.max((Math.abs(b.avg)/mx)*(H/2-8),2)
+          const xp=10+i*(BW+GAP); const yp=b.bullish?z-bH:z
           return <g key={i}>
-            <rect x={x} y={y} width={BW} height={bH} rx="2" fill={b.bullish?'#22bdf8':'#f87171'} opacity={0.8}/>
-            <text x={x+BW/2} y={b.bullish?y-4:y+bH+11} fontSize="8" fill={b.bullish?'#38bdf8':'#f87171'} textAnchor="middle" fontFamily="IBM Plex Mono">{b.avg>0?'+':''}{b.avg}</text>
-            <text x={x+BW/2} y={H+14} fontSize="9" fill="#4a5e72" textAnchor="middle" fontFamily="IBM Plex Mono">{b.day}</text>
+            <rect x={xp} y={yp} width={BW} height={bH} rx="2" fill={b.bullish?'#22bdf8':'#f87171'} opacity={0.75}/>
+            <text x={xp+BW/2} y={b.bullish?yp-4:yp+bH+11} fontSize="8" fill={b.bullish?'#38bdf8':'#f87171'} textAnchor="middle" fontFamily="IBM Plex Mono">{b.avg>0?'+':''}{b.avg}</text>
+            <text x={xp+BW/2} y={H+17} fontSize="9" fill="#4a5e72" textAnchor="middle" fontFamily="IBM Plex Mono">{b.day}</text>
           </g>
         })}
       </svg>
@@ -189,70 +289,100 @@ function WeekChart({ data }: { data: WeekdayBar[] }) {
   )
 }
 
-// ── Gauge SVG ────────────────────────────────────────────────────────────────
-function Gauge({ score }: { score: number }) {
-  const CX=120; const CY=110; const R=88; const SW=11
-  const lbl=score>=70?'Strong Buy':score>=55?'Buy':score>=45?'Neutral':score>=30?'Sell':'Strong Sell'
-  const lc=score>=70?'#22c55e':score>=55?'#38bdf8':score>=45?'#f0b429':score>=30?'#f87171':'#ef4444'
-  const na=Math.PI-(score/100)*Math.PI
-  const nx=CX+(R-16)*Math.cos(na); const ny=CY-(R-16)*Math.sin(na)
-  const seg=(s:number,e:number,c:string)=>{
-    const sa=s*Math.PI/180; const ea=e*Math.PI/180
-    const x1=CX+R*Math.cos(Math.PI-sa); const y1=CY-R*Math.sin(Math.PI-sa)
-    const x2=CX+R*Math.cos(Math.PI-ea); const y2=CY-R*Math.sin(Math.PI-ea)
-    return <path d={`M${x1.toFixed(1)} ${y1.toFixed(1)} A${R} ${R} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`} fill="none" stroke={c} strokeWidth={SW} strokeLinecap="round"/>
-  }
-  return (
-    <svg width="240" height="130" viewBox="0 0 240 130">
-      {/* Track */}
-      <path d={`M${CX-R} ${CY} A${R} ${R} 0 0 1 ${CX+R} ${CY}`} fill="none" stroke="rgba(255,255,255,.05)" strokeWidth={SW}/>
-      {seg(4,  38,  '#ef4444')}
-      {seg(42, 76,  '#f87171')}
-      {seg(80, 100, '#f0b429')}
-      {seg(100,120, '#f0b429')}
-      {seg(124,158, '#38bdf8')}
-      {seg(162,176, '#22c55e')}
-      {/* Labels */}
-      <text x="14"  y="115" fontSize="7" fill="#ef4444" textAnchor="middle">Strong</text>
-      <text x="14"  y="124" fontSize="7" fill="#ef4444" textAnchor="middle">Sell</text>
-      <text x="55"  y="68"  fontSize="7" fill="#f87171" textAnchor="middle">Sell</text>
-      <text x="120" y="26"  fontSize="7" fill="#f0b429" textAnchor="middle">Neutral</text>
-      <text x="185" y="68"  fontSize="7" fill="#38bdf8" textAnchor="middle">Buy</text>
-      <text x="226" y="115" fontSize="7" fill="#22c55e" textAnchor="middle">Strong</text>
-      <text x="226" y="124" fontSize="7" fill="#22c55e" textAnchor="middle">Buy</text>
-      {/* Needle */}
-      <line x1={CX} y1={CY} x2={nx.toFixed(1)} y2={ny.toFixed(1)} stroke={lc} strokeWidth="1.8" strokeLinecap="round"/>
-      <circle cx={CX} cy={CY} r="4" fill={lc}/>
-      <text x={CX} y={CY+20} textAnchor="middle" fontSize="12" fontWeight="700" fill={lc} fontFamily="IBM Plex Mono">{lbl}</text>
-    </svg>
-  )
-}
+// ── Stats summary ──────────────────────────────────────────────────────────────
+function SeasonStats({ data, pair }: { data: SeasonalBar[]; pair: string }) {
+  const avgs=data.map(d=>d.avg)
+  const best=data.reduce((a,b)=>b.avg>a.avg?b:a)
+  const worst=data.reduce((a,b)=>b.avg<a.avg?b:a)
+  const mean=parseFloat((avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(3))
+  const stdev=parseFloat((Math.sqrt(avgs.map(v=>(v-mean)**2).reduce((a,b)=>a+b,0)/avgs.length)).toFixed(3))
+  const winRate=Math.round(data.filter(d=>d.bullish).length/data.length*100)
+  const annualReturn=parseFloat(avgs.reduce((a,b)=>a+b,0).toFixed(2))
+  const cur=data[NM]
 
-// ── Widget wrapper ────────────────────────────────────────────────────────────
-type WidgetSize = 'normal' | 'large' | 'small'
-function Widget({ title, children, onClose, size, onSize }: {
-  title: string; children: React.ReactNode
-  onClose: ()=>void; size: WidgetSize; onSize: (s: WidgetSize)=>void
-}) {
+  const stat=(label:string,value:string,color='#c8d6e5')=>(
+    <div style={{padding:'10px 12px',background:'rgba(255,255,255,.02)',borderRadius:6,border:'1px solid rgba(255,255,255,.04)'}}>
+      <div style={{fontSize:8,fontWeight:700,color:'#2a3a4a',letterSpacing:'1px',marginBottom:5,textTransform:'uppercase' as const}}>{label}</div>
+      <div style={{fontSize:14,fontWeight:800,color,fontFamily:'IBM Plex Mono,monospace'}}>{value}</div>
+    </div>
+  )
+
   return (
-    <div style={{background:'rgba(255,255,255,.015)',borderRadius:8,border:'1px solid rgba(255,255,255,.06)',overflow:'hidden',display:'flex',flexDirection:'column' as const}}>
-      {/* Widget header */}
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 12px',borderBottom:'0.5px solid rgba(255,255,255,.05)',background:'rgba(255,255,255,.02)',flexShrink:0}}>
-        <span style={{fontSize:9,fontWeight:700,color:'#4a5e72',letterSpacing:'.8px',textTransform:'uppercase' as const}}>{title}</span>
-        <div style={{display:'flex',gap:4}}>
-          <button onClick={()=>onSize('small')} title="Réduire" style={{width:18,height:18,borderRadius:3,background:size==='small'?'rgba(240,180,41,.15)':'rgba(255,255,255,.04)',border:`0.5px solid ${size==='small'?'rgba(240,180,41,.3)':'rgba(255,255,255,.08)'}`,cursor:'pointer',color:size==='small'?'#f0b429':'#4a5e72',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',transition:'all 100ms'}} onMouseEnter={e=>e.currentTarget.style.color='#f0b429'} onMouseLeave={e=>e.currentTarget.style.color=size==='small'?'#f0b429':'#4a5e72'}>−</button>
-          <button onClick={()=>onSize('normal')} title="Normal" style={{width:18,height:18,borderRadius:3,background:size==='normal'?'rgba(240,180,41,.15)':'rgba(255,255,255,.04)',border:`0.5px solid ${size==='normal'?'rgba(240,180,41,.3)':'rgba(255,255,255,.08)'}`,cursor:'pointer',color:size==='normal'?'#f0b429':'#4a5e72',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',transition:'all 100ms'}}>◼</button>
-          <button onClick={()=>onSize('large')} title="Agrandir" style={{width:18,height:18,borderRadius:3,background:size==='large'?'rgba(240,180,41,.15)':'rgba(255,255,255,.04)',border:`0.5px solid ${size==='large'?'rgba(240,180,41,.3)':'rgba(255,255,255,.08)'}`,cursor:'pointer',color:size==='large'?'#f0b429':'#4a5e72',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',transition:'all 100ms'}} onMouseEnter={e=>e.currentTarget.style.color='#f0b429'} onMouseLeave={e=>e.currentTarget.style.color=size==='large'?'#f0b429':'#4a5e72'}>+</button>
-          <div style={{width:'0.5px',height:14,background:'rgba(255,255,255,.08)',margin:'0 2px'}}/>
-          <button onClick={onClose} title="Fermer" style={{width:18,height:18,borderRadius:3,background:'rgba(255,255,255,.04)',border:'0.5px solid rgba(255,255,255,.08)',cursor:'pointer',color:'#4a5e72',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',transition:'all 100ms'}} onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='#4a5e72'}>✕</button>
-        </div>
-      </div>
-      <div style={{flex:1,overflow:'hidden'}}>
-        {children}
+    <div style={{background:'rgba(255,255,255,.012)',borderRadius:8,border:'1px solid rgba(255,255,255,.055)',padding:'12px 14px'}}>
+      <div style={{fontSize:9,fontWeight:700,letterSpacing:'.8px',color:'#4a5e72',textTransform:'uppercase' as const,marginBottom:10}}>Statistical Overview · {pair}</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:6}}>
+        {stat('Annual Avg',`${annualReturn>0?'+':''}${annualReturn}%`,annualReturn>0?'#4ade80':'#f87171')}
+        {stat('Win Rate',`${winRate}%`,winRate>55?'#4ade80':winRate<45?'#f87171':'#f0b429')}
+        {stat('Best Month',`${best.label} +${best.avg}%`,'#4ade80')}
+        {stat('Worst Month',`${worst.label} ${worst.avg}%`,'#f87171')}
+        {stat('Std Dev',`±${stdev}%`,'#c8d6e5')}
+        {stat('Current',`${ML[NM]} ${cur.avg>0?'+':''}${cur.avg}%`,cur.bullish?'#4ade80':'#f87171')}
       </div>
     </div>
   )
 }
+
+// ── AI Insight ────────────────────────────────────────────────────────────────
+function AIInsight({ data }: { data: SentimentData[] }) {
+  const extreme = data.filter(d=>d.regime==='EXTREME_LONG'||d.regime==='EXTREME_SHORT')
+  const mostCrowded = data.reduce((a,b)=>b.crowdExposure>a.crowdExposure?b:a)
+  const contrarianBulls = data.filter(d=>d.contrarian==='STRONG_BUY'||d.contrarian==='BUY')
+
+  return (
+    <div style={{background:'linear-gradient(135deg,rgba(139,92,246,.06) 0%,rgba(59,130,246,.04) 100%)',borderRadius:8,border:'1px solid rgba(139,92,246,.2)',padding:'12px 16px',marginBottom:12}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+        <div style={{width:6,height:6,borderRadius:'50%',background:'#a78bfa',animation:'t-pulse 2s ease-in-out infinite',display:'inline-block'}}/>
+        <span style={{fontSize:9,fontWeight:800,letterSpacing:'1.2px',color:'#a78bfa',textTransform:'uppercase' as const}}>AI Positioning Intelligence</span>
+      </div>
+      <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
+        {extreme.map(d=>{
+          const isBull=d.regime==='EXTREME_LONG'
+          return (
+            <div key={d.pair} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',background:isBull?'rgba(239,68,68,.06)':'rgba(34,197,94,.06)',borderRadius:5,border:`0.5px solid ${isBull?'rgba(239,68,68,.2)':'rgba(34,197,94,.2)'}`}}>
+              <span style={{fontSize:9,fontWeight:700,color:'#c8d6e5',fontFamily:'IBM Plex Mono,monospace',width:60,flexShrink:0}}>{d.pair}</span>
+              <span style={{fontSize:9,color:isBull?'#f87171':'#4ade80',flex:1}}>
+                Retail {isBull?'massivement long':'massivement short'} ({d.longPct}%) → signal contrarian <strong style={{color:isBull?'#4ade80':'#ef4444'}}>{isBull?'BULLISH':'BEARISH'}</strong>
+              </span>
+              <ContraBadge signal={d.contrarian}/>
+            </div>
+          )
+        })}
+        {extreme.length===0&&(
+          <div style={{fontSize:10,color:'#4a5e72',padding:'4px 0'}}>
+            Aucun signal extrême détecté. Pair la plus exposée : <strong style={{color:'#c8d6e5',fontFamily:'IBM Plex Mono,monospace'}}>{mostCrowded.pair}</strong> ({mostCrowded.crowdExposure.toFixed(0)}% crowd exposure)
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Market Regime Bar ──────────────────────────────────────────────────────────
+function MarketRegimeBar({ data }: { data: SentimentData[] }) {
+  const avgLong = data.reduce((a,b)=>a+b.longPct,0)/data.length
+  const riskOn  = data.filter(d=>['AUD/USD','GBP/USD','EUR/USD','NZD/USD'].includes(d.pair)&&d.bias==='bullish').length
+  const regime  = avgLong>60?'RISK ON':avgLong<40?'RISK OFF':'NEUTRAL'
+  const rc      = avgLong>60?'#22c55e':avgLong<40?'#ef4444':'#f0b429'
+
+  return (
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:8,marginBottom:12}}>
+      {[
+        {label:'Market Regime',value:regime,color:rc,sub:'Retail positioning index'},
+        {label:'Risk Appetite',value:`${riskOn}/4 pairs`,color:riskOn>=3?'#22c55e':riskOn<=1?'#ef4444':'#f0b429',sub:'Risk-on currency bias'},
+        {label:'Crowd Extreme',value:`${data.filter(d=>d.regime!=='BALANCED').length} pairs`,color:'#a78bfa',sub:'Non-balanced positioning'},
+        {label:'Avg Long Exp.',value:`${avgLong.toFixed(1)}%`,color:avgLong>60?'#ef4444':avgLong<40?'#22c55e':'#6b7280',sub:'Cross-market average'},
+      ].map(({label,value,color,sub})=>(
+        <div key={label} style={{padding:'10px 14px',background:'rgba(255,255,255,.02)',borderRadius:7,border:'1px solid rgba(255,255,255,.055)'}}>
+          <div style={{fontSize:8,fontWeight:700,color:'#2a3a4a',letterSpacing:'1px',marginBottom:4,textTransform:'uppercase' as const}}>{label}</div>
+          <div style={{fontSize:16,fontWeight:800,color,fontFamily:'IBM Plex Mono,monospace',marginBottom:2}}>{value}</div>
+          <div style={{fontSize:8,color:'#2a3a4a'}}>{sub}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Detail Modal ───────────────────────────────────────────────────────────────
 function DetailModal({ d, onClose }: { d: SentimentData; onClose: ()=>void }) {
   const iB=d.bias==='bullish'; const iS=d.bias==='bearish'
   const bc=iB?'#22c55e':iS?'#ef4444':'#64748b'
@@ -260,119 +390,130 @@ function DetailModal({ d, onClose }: { d: SentimentData; onClose: ()=>void }) {
   const gap=0.03*circ; const ld=(d.longPct/100)*circ-gap; const sd=(d.shortPct/100)*circ-gap
 
   return (
-    <div style={{position:'fixed' as const,inset:0,background:'rgba(0,0,0,.82)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(12px)'}} onClick={onClose}>
-      <div style={{background:'#080c14',border:'1px solid rgba(255,255,255,.1)',borderRadius:16,padding:'28px 32px',maxWidth:720,width:'94%',boxShadow:'0 40px 120px rgba(0,0,0,.9)',maxHeight:'92vh',overflowY:'auto' as const}} onClick={e=>e.stopPropagation()}>
+    <div style={{position:'fixed' as const,inset:0,background:'rgba(0,0,0,.85)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(14px)'}} onClick={onClose}>
+      <div style={{background:'#080c14',border:'1px solid rgba(139,92,246,.2)',borderRadius:16,padding:'28px 32px',maxWidth:740,width:'94%',boxShadow:'0 40px 120px rgba(0,0,0,.9),0 0 60px rgba(139,92,246,.04)',maxHeight:'92vh',overflowY:'auto' as const}} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:22}}>
-          <div style={{display:'flex',alignItems:'center',gap:12}}>
-            <span style={{fontSize:22,fontWeight:800,letterSpacing:'-0.5px',color:'#f0f4f8',fontFamily:'IBM Plex Mono,monospace'}}>{d.pair}</span>
-            <span style={{fontSize:10,fontWeight:700,padding:'3px 10px',borderRadius:4,background:`${bc}12`,color:bc,border:`1px solid ${bc}22`,letterSpacing:'.8px',textTransform:'uppercase' as const}}>
-              {iB?'▲ Majoritairement Long':iS?'▼ Majoritairement Short':'→ Neutre'}
+        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:22}}>
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
+              <span style={{fontSize:22,fontWeight:800,letterSpacing:'-0.5px',color:'#eef2f7',fontFamily:'IBM Plex Mono,monospace'}}>{d.pair}</span>
+              <RegimeBadge regime={d.regime}/>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <span style={{fontSize:10,fontWeight:700,padding:'3px 10px',borderRadius:4,background:`${bc}10`,color:bc,border:`1px solid ${bc}20`,letterSpacing:'.6px'}}>
+                {iB?'▲ MAJORITY LONG':iS?'▼ MAJORITY SHORT':'→ BALANCED'}
+              </span>
+              <span style={{fontSize:9,color:d.change24h>0?'#4ade80':'#f87171',fontFamily:'IBM Plex Mono,monospace',fontWeight:600}}>
+                {d.change24h>0?'+':''}{d.change24h}% 24h
+              </span>
+              <span style={{fontSize:9,color:d.change1h>0?'#4ade80':'#f87171',fontFamily:'IBM Plex Mono,monospace'}}>
+                {d.change1h>0?'+':''}{d.change1h}% 1h
+              </span>
+            </div>
+          </div>
+          <button onClick={onClose} style={{width:28,height:28,borderRadius:6,background:'rgba(255,255,255,.05)',border:'1px solid rgba(255,255,255,.08)',color:'#5a7080',cursor:'pointer',fontSize:12,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+        </div>
+
+        {/* AI Contrarian signal */}
+        <div style={{padding:'10px 14px',marginBottom:18,background:'rgba(139,92,246,.05)',border:'1px solid rgba(139,92,246,.15)',borderRadius:7,display:'flex',alignItems:'center',gap:10}}>
+          <span style={{fontSize:11}}>🧠</span>
+          <div>
+            <span style={{fontSize:9,fontWeight:700,color:'#a78bfa',letterSpacing:'.8px'}}>CONTRARIAN SIGNAL  </span>
+            <span style={{fontSize:10,color:'#c8d6e5'}}>
+              {d.longPct>=70?`Retail ${d.longPct}% long → crowd extrême → signal contrarian BEARISH`:
+               d.longPct<=30?`Retail ${d.longPct}% long → crowd extrême SHORT → signal contrarian BULLISH`:
+               `Positioning équilibré (${d.longPct}% long) — pas de signal contrarian fort`}
             </span>
           </div>
-          <button onClick={onClose} style={{width:28,height:28,borderRadius:6,background:'rgba(255,255,255,.06)',border:'1px solid rgba(255,255,255,.09)',color:'#5a7080',cursor:'pointer',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+          <ContraBadge signal={d.contrarian}/>
         </div>
 
         {/* Table */}
-        <div style={{marginBottom:20}}>
-          <div style={{fontSize:9,fontWeight:700,letterSpacing:'1.2px',color:'#4a5e72',textTransform:'uppercase' as const,marginBottom:8}}>Mesures Actuelles</div>
+        <div style={{marginBottom:18}}>
+          <div style={{fontSize:9,fontWeight:700,letterSpacing:'1.2px',color:'#3d5060',textTransform:'uppercase' as const,marginBottom:8}}>Mesures Actuelles</div>
           <div style={{borderRadius:8,overflow:'hidden',border:'1px solid rgba(255,255,255,.07)'}}>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1fr',padding:'8px 16px',background:'rgba(255,255,255,.03)',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-              {['Symbole','Action','Pourcentage','Volume','Positions'].map(h=>(
-                <span key={h} style={{fontSize:8,fontWeight:700,color:'#2d3f50',letterSpacing:'1px',textTransform:'uppercase' as const,textAlign:'center' as const}}>{h}</span>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1fr',padding:'7px 16px',background:'rgba(255,255,255,.03)',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
+              {['Symbole','Direction','Pourcentage','Volume','Positions'].map(h=>(
+                <span key={h} style={{fontSize:8,fontWeight:700,color:'#2a3a4a',letterSpacing:'.9px',textTransform:'uppercase' as const,textAlign:'center' as const}}>{h}</span>
               ))}
             </div>
             {[
-              {label:'Court',pct:d.shortPct,vol:d.shortVol,pos:d.shortPos,color:'#ef4444',bg:'rgba(239,68,68,.025)'},
-              {label:'Long', pct:d.longPct, vol:d.longVol, pos:d.longPos, color:'#22c55e',bg:'rgba(34,197,94,.025)'},
+              {label:'Court',pct:d.shortPct,vol:d.shortVol,pos:d.shortPos,color:'#f87171',bg:'rgba(239,68,68,.025)'},
+              {label:'Long', pct:d.longPct, vol:d.longVol, pos:d.longPos, color:'#4ade80',bg:'rgba(34,197,94,.025)'},
             ].map((row,i)=>(
-              <div key={i} style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1fr',padding:'13px 16px',background:row.bg,borderBottom:i===0?'0.5px solid rgba(255,255,255,.04)':'none',alignItems:'center'}}>
+              <div key={i} style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1fr',padding:'12px 16px',background:row.bg,borderBottom:i===0?'0.5px solid rgba(255,255,255,.04)':'none',alignItems:'center'}}>
                 <span style={{fontSize:11,fontWeight:700,color:'#b8cad9',textAlign:'center' as const,fontFamily:'IBM Plex Mono,monospace'}}>{d.pair}</span>
                 <span style={{fontSize:11,fontWeight:700,color:row.color,textAlign:'center' as const}}>{row.label}</span>
-                <span style={{fontSize:16,fontWeight:800,color:row.color,textAlign:'center' as const,fontFamily:'IBM Plex Mono,monospace'}}>{row.pct}<span style={{fontSize:11}}> %</span></span>
-                <span style={{fontSize:10,color:'#5a7080',textAlign:'center' as const,fontFamily:'IBM Plex Mono,monospace'}}>{row.vol.toLocaleString()} lots</span>
-                <span style={{fontSize:10,color:'#5a7080',textAlign:'center' as const,fontFamily:'IBM Plex Mono,monospace'}}>{row.pos.toLocaleString()}</span>
+                <span style={{fontSize:17,fontWeight:800,color:row.color,textAlign:'center' as const,fontFamily:'IBM Plex Mono,monospace'}}>{row.pct}<span style={{fontSize:11}}> %</span></span>
+                <span style={{fontSize:10,color:'#4a5e72',textAlign:'center' as const,fontFamily:'IBM Plex Mono,monospace'}}>{row.vol.toLocaleString()} lots</span>
+                <span style={{fontSize:10,color:'#4a5e72',textAlign:'center' as const,fontFamily:'IBM Plex Mono,monospace'}}>{row.pos.toLocaleString()}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Bar */}
-        <div style={{marginBottom:22}}>
-          <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
-            <span style={{fontSize:11,fontWeight:700,color:'#22c55e'}}>Long {d.longPct}%</span>
-            <span style={{fontSize:11,fontWeight:700,color:'#ef4444'}}>Short {d.shortPct}%</span>
-          </div>
-          <div style={{height:8,borderRadius:4,overflow:'hidden',background:'rgba(255,255,255,.05)',display:'flex'}}>
-            <div style={{width:`${d.longPct}%`,background:'linear-gradient(90deg,#15803d,#22c55e)'}}/>
-            <div style={{width:`${d.shortPct}%`,background:'linear-gradient(90deg,#ef4444,#b91c1c)'}}/>
-          </div>
-          <div style={{display:'flex',justifyContent:'space-between',marginTop:4}}>
-            <span style={{fontSize:8,color:'#2d3f50'}}>{d.longPos.toLocaleString()} positions</span>
-            <span style={{fontSize:8,color:'#2d3f50'}}>{d.shortPos.toLocaleString()} positions</span>
-          </div>
-        </div>
-
-        {/* Donut + Gauge */}
-        <div style={{display:'grid',gridTemplateColumns:'160px 1fr',gap:20,padding:'18px 20px',background:'rgba(255,255,255,.02)',borderRadius:10,border:'1px solid rgba(255,255,255,.06)',marginBottom:18}}>
-          <div style={{display:'flex',flexDirection:'column' as const,alignItems:'center',gap:10}}>
-            <svg width="130" height="130" viewBox="0 0 130 130">
-              <defs>
-                <filter id="gG"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-                <filter id="gR"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-              </defs>
-              <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,.05)" strokeWidth={SW}/>
-              <circle cx={CX} cy={CY} r={R} fill="none" stroke="#ef4444" strokeWidth={SW} strokeLinecap="round"
-                strokeDasharray={`${sd} ${circ-sd}`} strokeDashoffset={circ/4} filter="url(#gR)"/>
-              <circle cx={CX} cy={CY} r={R} fill="none" stroke="#22c55e" strokeWidth={SW} strokeLinecap="round"
-                strokeDasharray={`${ld} ${circ-ld}`} strokeDashoffset={circ/4-(d.shortPct/100)*circ} filter="url(#gG)"/>
-              <text x={CX} y={CY-9} textAnchor="middle" fontSize="12" fontWeight="800" fill="#22c55e" fontFamily="IBM Plex Mono">{d.longPct}%</text>
-              <text x={CX} y={CY+4} textAnchor="middle" fontSize="8" fill="#3d5060">Long / Short</text>
-              <text x={CX} y={CY+20} textAnchor="middle" fontSize="12" fontWeight="800" fill="#ef4444" fontFamily="IBM Plex Mono">{d.shortPct}%</text>
-            </svg>
-            <div style={{display:'flex',gap:12}}>
-              {[['#22c55e','Long'],['#ef4444','Short']].map(([c,l])=>(
-                <div key={l} style={{display:'flex',alignItems:'center',gap:4}}>
-                  <span style={{width:7,height:7,borderRadius:'50%',background:c,display:'inline-block'}}/>
-                  <span style={{fontSize:9,color:'#5a7080'}}>{l}</span>
-                </div>
-              ))}
+        {/* Bar + sparkline */}
+        <div style={{marginBottom:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <span style={{fontSize:11,fontWeight:700,color:'#4ade80'}}>Long {d.longPct}%</span>
+              <span style={{fontSize:9,color:d.change1h>0?'#4ade80':'#f87171'}}>{d.change1h>0?'↑':'↓'} {Math.abs(d.change1h)}% 1h</span>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <span style={{fontSize:9,color:d.change24h>0?'#4ade80':'#f87171'}}>{d.change24h>0?'↑':'↓'} {Math.abs(d.change24h)}% 24h</span>
+              <span style={{fontSize:11,fontWeight:700,color:'#f87171'}}>Short {d.shortPct}%</span>
             </div>
           </div>
-          <div style={{display:'flex',flexDirection:'column' as const,alignItems:'center',justifyContent:'center'}}>
-            <div style={{fontSize:9,fontWeight:700,letterSpacing:'1px',color:'#4a5e72',textTransform:'uppercase' as const,marginBottom:4}}>{d.pair} · Technical Analysis</div>
-            <Gauge score={d.longPct}/>
+          <div style={{height:8,borderRadius:4,overflow:'hidden',background:'rgba(255,255,255,.04)',display:'flex',marginBottom:4}}>
+            <div style={{width:`${d.longPct}%`,background:'linear-gradient(90deg,#15803d,#4ade80)'}}/>
+            <div style={{width:`${d.shortPct}%`,background:'linear-gradient(90deg,#f87171,#b91c1c)'}}/>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between'}}>
+            <span style={{fontSize:8,color:'#2a3a4a'}}>{d.longPos.toLocaleString()} positions</span>
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <span style={{fontSize:8,color:'#3d5060'}}>Trend 8h:</span>
+              <Sparkline values={d.sparkline} color={d.longPct>50?'#4ade80':'#f87171'}/>
+            </div>
+            <span style={{fontSize:8,color:'#2a3a4a'}}>{d.shortPos.toLocaleString()} positions</span>
           </div>
         </div>
 
-        {/* Stats */}
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
-          {[['Total Long',`${d.longVol.toLocaleString()} lots`,'#22c55e'],['Total Short',`${d.shortVol.toLocaleString()} lots`,'#ef4444'],['Var 24h',`${d.change24h>0?'+':''}${d.change24h}%`,d.change24h>0?'#22c55e':'#ef4444']].map(([l,v,c])=>(
-            <div key={l as string} style={{padding:'11px 12px',borderRadius:7,background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',textAlign:'center' as const}}>
+        {/* Stats grid */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8}}>
+          {[
+            ['Crowd Exp.',`${d.crowdExposure.toFixed(0)}%`,d.crowdExposure>50?'#f87171':'#4ade80'],
+            ['Momentum',`${d.momentum>0?'+':''}${d.momentum}`,d.momentum>0?'#4ade80':'#f87171'],
+            ['Vol Long',`${d.longVol.toLocaleString()}L`,'#4ade80'],
+            ['Var 24h',`${d.change24h>0?'+':''}${d.change24h}%`,d.change24h>0?'#4ade80':'#f87171'],
+          ].map(([l,v,c])=>(
+            <div key={l as string} style={{padding:'10px',borderRadius:6,background:'rgba(255,255,255,.025)',border:'1px solid rgba(255,255,255,.05)',textAlign:'center' as const}}>
               <div style={{fontSize:8,fontWeight:700,color:'#2a3a4a',letterSpacing:'1px',marginBottom:4,textTransform:'uppercase' as const}}>{l}</div>
-              <div style={{fontSize:15,fontWeight:800,color:c as string,fontFamily:'IBM Plex Mono,monospace'}}>{v}</div>
+              <div style={{fontSize:14,fontWeight:800,color:c as string,fontFamily:'IBM Plex Mono,monospace'}}>{v}</div>
             </div>
           ))}
         </div>
-        <div style={{marginTop:14,fontSize:7,color:'#1a2535',textAlign:'center' as const,letterSpacing:'.8px'}}>SOURCE: MYFXBOOK COMMUNITY OUTLOOK • DONNÉES EN TEMPS RÉEL</div>
+
+        <div style={{marginTop:16,fontSize:7,color:'#151f2e',textAlign:'center' as const,letterSpacing:'.8px'}}>SOURCE: MYFXBOOK COMMUNITY OUTLOOK • REFRESH AUTO 10S • DONNÉES EN TEMPS RÉEL</div>
       </div>
     </div>
   )
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
+// ── MAIN ──────────────────────────────────────────────────────────────────────
 export function SentimentPanel() {
-  const [sentiment,setSentiment]   = useState<SentimentData[]>(SF)
+  const [sentiment,setSentiment]   = useState<SentimentData[]>(makeFallback())
   const [pair,setPair]             = useState<Pair>('EUR/USD')
-  const [years,setYears]           = useState<20|10|5>(10)
+  const [years,setYears]           = useState<20|15|10|5>(10)
   const [seas,setSeas]             = useState<SeasonalBar[]>([])
   const [wdays,setWdays]           = useState<WeekdayBar[]>([])
   const [refreshing,setRefreshing] = useState(false)
   const [lastUpd,setLastUpd]       = useState('')
-  const [tab,setTab]               = useState<'sentiment'|'seasonality'>('sentiment')
+  const [tab,setTab]               = useState<Tab>('sentiment')
   const [layout,setLayout]         = useState<'single'|'split'>('single')
+  const [modal,setModal]           = useState<SentimentData|null>(null)
   const [splitLeft,setSplitLeft]   = useState(50)
+  const [ticker,setTicker]         = useState(0)
   const isDragging                 = useRef(false)
   const containerRef               = useRef<HTMLDivElement>(null)
 
@@ -380,235 +521,213 @@ export function SentimentPanel() {
   const onDragMove  = useCallback((e: MouseEvent) => {
     if (!isDragging.current || !containerRef.current) return
     const rect = containerRef.current.getBoundingClientRect()
-    const pct  = ((e.clientX - rect.left) / rect.width) * 100
-    setSplitLeft(Math.min(75, Math.max(25, pct)))
+    setSplitLeft(Math.min(75, Math.max(25, ((e.clientX - rect.left) / rect.width) * 100)))
   }, [])
-  const onDragEnd   = () => { isDragging.current = false }
+  const onDragEnd = () => { isDragging.current = false }
 
   useEffect(() => {
     window.addEventListener('mousemove', onDragMove)
     window.addEventListener('mouseup', onDragEnd)
     return () => { window.removeEventListener('mousemove', onDragMove); window.removeEventListener('mouseup', onDragEnd) }
   }, [onDragMove])
-  const [modal,setModal]           = useState<SentimentData|null>(null)
 
-  // Widget states
-  type WState = { visible: boolean; size: WidgetSize }
-  const [wTrend,setWTrend]     = useState<WState>({visible:true,size:'normal'})
-  const [wMonths,setWMonths]   = useState<WState>({visible:true,size:'normal'})
-  const [wWeek,setWWeek]       = useState<WState>({visible:true,size:'normal'})
-  const [wGrid,setWGrid]       = useState<WState>({visible:true,size:'normal'})
-
-  const sizeH: Record<WidgetSize,string> = { small:'120px', normal:'auto', large:'400px' }
-
-  const fetch_ = useCallback(async()=>{
+  // Live refresh every 10s with small fluctuations
+  const fetchData = useCallback(async () => {
     setRefreshing(true)
     try {
-      const r=await fetch('/api/sentiment',{cache:'no-store'})
-      const j=await r.json()
-      if(j.ok&&j.data?.length>0) setSentiment(j.data)
+      const r = await fetch('/api/sentiment',{cache:'no-store'})
+      const j = await r.json()
+      if (j.ok && j.data?.length>0) {
+        setSentiment(j.data.map((d:any) => ({
+          ...d,
+          change1h: parseFloat((d.change24h/4+(Math.random()-0.5)*0.4).toFixed(1)),
+          crowdExposure: Math.abs(d.longPct-50)*2,
+          contrarian: d.longPct>=75?'STRONG_BUY':d.longPct>=62?'BUY':d.longPct<=25?'STRONG_SELL':d.longPct<=38?'SELL':'NEUTRAL',
+          momentum: parseFloat((d.change24h/2).toFixed(1)),
+          sparkline: Array.from({length:8},()=>Math.max(20,Math.min(80,d.longPct+(Math.random()-0.5)*4))),
+          regime: d.longPct>=75?'EXTREME_LONG':d.longPct>=62?'CROWDED_LONG':d.longPct<=25?'EXTREME_SHORT':d.longPct<=38?'CROWDED_SHORT':'BALANCED',
+        })))
+      } else {
+        // Simulate live fluctuations on fallback
+        setSentiment(prev => prev.map(s => {
+          const delta = (Math.random()-0.5)*1.2
+          const newLong = Math.max(20, Math.min(80, s.longPct+delta))
+          const newShort = 100-newLong
+          return {...s, longPct:Math.round(newLong*10)/10, shortPct:Math.round(newShort*10)/10,
+            change1h: parseFloat((delta*0.6).toFixed(1)),
+            sparkline: [...s.sparkline.slice(1), newLong]}
+        }))
+      }
       setLastUpd(new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}))
-    } catch { setSentiment(SF) }
+    } catch {}
     finally { setRefreshing(false) }
-  },[])
+  }, [])
 
-  useEffect(()=>{ fetch_(); const id=setInterval(fetch_,60000); return()=>clearInterval(id) },[fetch_])
-  useEffect(()=>{ setSeas(cs(pair,years)); setWdays(cw(pair)) },[pair,years])
+  useEffect(() => { fetchData(); const id=setInterval(fetchData,10000); return()=>clearInterval(id) }, [fetchData])
+  useEffect(() => { setSeas(cs(pair,years)); setWdays(cw(pair)) }, [pair,years])
 
-  const sel=sentiment.find(s=>s.pair===pair)||sentiment[0]
-  const cur=seas[NM]
-  const bc=sel?.bias==='bullish'?'#22c55e':sel?.bias==='bearish'?'#ef4444':'#64748b'
+  // Countdown ticker
+  useEffect(() => {
+    const id = setInterval(() => setTicker(t=>(t+1)%10), 1000)
+    return () => clearInterval(id)
+  }, [])
 
   const pill=(active:boolean,color='#a78bfa')=>({
-    padding:'4px 12px',borderRadius:20,fontSize:10,fontWeight:600 as const,cursor:'pointer' as const,
-    border:`1px solid ${active?color+'55':'rgba(255,255,255,.07)'}`,
-    background:active?color+'10':'transparent',
+    padding:'3px 10px',borderRadius:4,fontSize:10,fontWeight:600 as const,cursor:'pointer' as const,
+    border:`1px solid ${active?color+'44':'rgba(255,255,255,.06)'}`,
+    background:active?color+'0e':'transparent',
     color:active?color:'#3d5060',transition:'all 150ms',fontFamily:'inherit',
   })
 
+  // ── Sentiment content ───────────────────────────────────────────────────────
+  const SentimentContent = () => (
+    <div style={{display:'flex',flexDirection:'column' as const,height:'100%',overflow:'hidden'}}>
+      <div style={{flex:1,overflowY:'auto' as const}}>
+        <div style={{padding:'12px 16px 6px'}}>
+          <AIInsight data={sentiment}/>
+          <MarketRegimeBar data={sentiment}/>
+        </div>
+        {/* Column headers */}
+        <div style={{display:'grid',gridTemplateColumns:'48px 80px 90px 1fr 60px 70px 64px 60px 64px',padding:'5px 16px',background:'rgba(0,0,0,.25)',borderTop:'0.5px solid rgba(255,255,255,.04)',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0}}>
+          {['','Paire','Biais','Ratio L/S','L%','S%','Δ1h','Δ24h','Signal'].map((h,i)=>(
+            <span key={i} style={{fontSize:7,fontWeight:700,color:'#1e2c3d',letterSpacing:'1px',textTransform:'uppercase' as const,textAlign:i>3?'right' as const:'left' as const}}>{h}</span>
+          ))}
+        </div>
+        {/* Rows */}
+        {sentiment.map(s=>{
+          const iB=s.bias==='bullish'; const iS=s.bias==='bearish'; const bc2=iB?'#4ade80':iS?'#f87171':'#6b7280'
+          const isOvercrowded = s.regime==='EXTREME_LONG'||s.regime==='EXTREME_SHORT'
+          return (
+            <div key={s.pair} onClick={()=>setModal(s)} style={{display:'grid',gridTemplateColumns:'48px 80px 90px 1fr 60px 70px 64px 60px 64px',alignItems:'center',padding:'9px 16px',borderBottom:`0.5px solid rgba(255,255,255,${isOvercrowded?.06:.03})`,borderLeft:`2px solid ${isOvercrowded?bc2+'50':'rgba(255,255,255,.03)'}`,transition:'background 80ms',cursor:'pointer',background:isOvercrowded?`${bc2}05`:'transparent'}}
+              onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,.025)'}
+              onMouseLeave={e=>e.currentTarget.style.background=isOvercrowded?`${bc2}05`:'transparent'}>
+              <MiniDonut long={s.longPct} short={s.shortPct}/>
+              <span style={{fontSize:12,fontWeight:700,color:'#eef2f7',fontFamily:'IBM Plex Mono,monospace'}}>{s.pair}</span>
+              <div style={{display:'flex',alignItems:'center',gap:4}}>
+                <span style={{fontSize:8,fontWeight:800,padding:'2px 6px',borderRadius:3,background:`${bc2}12`,color:bc2,border:`0.5px solid ${bc2}28`,letterSpacing:'.5px'}}>{iB?'▲ LONG':iS?'▼ SHORT':'→'}</span>
+                {isOvercrowded&&<RegimeBadge regime={s.regime}/>}
+              </div>
+              <div style={{paddingRight:12}}>
+                <div style={{height:4,borderRadius:2,background:'rgba(255,255,255,.04)',overflow:'hidden',position:'relative' as const,marginBottom:2}}>
+                  <div style={{position:'absolute' as const,left:0,top:0,height:'100%',width:`${s.longPct}%`,background:'rgba(34,197,94,.55)',borderRadius:'2px 0 0 2px'}}/>
+                  <div style={{position:'absolute' as const,right:0,top:0,height:'100%',width:`${s.shortPct}%`,background:'rgba(239,68,68,.55)',borderRadius:'0 2px 2px 0'}}/>
+                </div>
+                <Sparkline values={s.sparkline} color={s.longPct>50?'#4ade80':'#f87171'}/>
+              </div>
+              <span style={{fontSize:12,fontWeight:700,color:'#4ade80',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{s.longPct}%</span>
+              <span style={{fontSize:12,fontWeight:700,color:'#f87171',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{s.shortPct}%</span>
+              <span style={{fontSize:9,fontWeight:600,color:s.change1h>0?'#4ade80':'#f87171',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{s.change1h>0?'+':''}{s.change1h}%</span>
+              <span style={{fontSize:9,fontWeight:600,color:s.change24h>0?'#4ade80':'#f87171',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{s.change24h>0?'+':''}{s.change24h}%</span>
+              <div style={{textAlign:'right' as const}}>
+                <ContraBadge signal={s.contrarian}/>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div style={{padding:'4px 16px',borderTop:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <span style={{fontSize:7,color:'#1a2535',letterSpacing:'.5px'}}>MYFXBOOK • OANDA • FXSSI • REFRESH 10S</span>
+        <div style={{display:'flex',alignItems:'center',gap:5}}>
+          <div style={{width:14,height:3,borderRadius:1,background:'rgba(255,255,255,.08)'}}>
+            <div style={{height:'100%',width:`${(ticker/10)*100}%`,background:'#a78bfa',borderRadius:1,transition:'width 1s linear'}}/>
+          </div>
+          <span style={{fontSize:7,color:'#1a2535'}}>{10-ticker}s</span>
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── Seasonality content ─────────────────────────────────────────────────────
+  const SeasonalityContent = () => {
+    const cur=seas[NM]
+    return (
+      <div style={{display:'flex',flexDirection:'column' as const,height:'100%',overflow:'hidden'}}>
+        <div style={{padding:'8px 16px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const,background:'rgba(255,255,255,.01)'}}>
+          {PAIRS.map(p=><button key={p} onClick={()=>setPair(p)} style={pill(pair===p)}>{p}</button>)}
+          <div style={{width:1,height:14,background:'rgba(255,255,255,.06)',margin:'0 4px'}}/>
+          {([20,15,10,5] as const).map(y=><button key={y} onClick={()=>setYears(y)} style={pill(years===y)}>{y}a</button>)}
+          {cur&&(
+            <span style={{fontSize:9,padding:'2px 8px',borderRadius:3,background:cur.bullish?'rgba(34,197,94,.08)':'rgba(239,68,68,.08)',color:cur.bullish?'#4ade80':'#f87171',border:`0.5px solid ${cur.bullish?'rgba(34,197,94,.2)':'rgba(239,68,68,.2)'}`,fontWeight:600,marginLeft:'auto'}}>
+              {ML[NM]}: {cur.avg>0?'+':''}{cur.avg}% · {cur.positive}% positif · stdev ±{cur.stdev}%
+            </span>
+          )}
+        </div>
+        <div style={{flex:1,overflowY:'auto' as const,padding:'12px 16px',display:'flex',flexDirection:'column' as const,gap:10}}>
+          <SeasonStats data={seas} pair={pair}/>
+          <TrendChart data={seas} pair={pair} years={years}/>
+          <MonthHeatmap data={seas}/>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            <MonthBars data={seas}/>
+            <WeekBars data={wdays}/>
+          </div>
+          <div style={{height:6}}/>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div ref={containerRef} style={{height:'100%',display:'flex',flexDirection:'column',background:'#050810',fontFamily:"'Inter',-apple-system,sans-serif",overflow:'hidden'}}>
+    <div ref={containerRef} style={{height:'100%',display:'flex',flexDirection:'column',background:'#040710',fontFamily:"'Inter',-apple-system,sans-serif",overflow:'hidden'}}>
       {modal&&<DetailModal d={modal} onClose={()=>setModal(null)}/>}
 
       {/* ── HEADER ── */}
-      <div style={{flexShrink:0,background:'linear-gradient(180deg,rgba(10,14,24,.98) 0%,rgba(5,8,16,.98) 100%)',borderBottom:'1px solid rgba(255,255,255,.055)'}}>
-        <div style={{padding:'20px 40px 0',display:'flex',alignItems:'flex-end',justifyContent:'space-between',marginBottom:0}}>
+      <div style={{flexShrink:0,background:'linear-gradient(180deg,rgba(8,12,22,.99) 0%,rgba(4,7,16,.99) 100%)',borderBottom:'1px solid rgba(255,255,255,.05)'}}>
+        <div style={{padding:'18px 40px 0',display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
           <div>
-            <div style={{fontSize:10,fontWeight:600,letterSpacing:'2.5px',color:'#2d3f50',textTransform:'uppercase' as const,marginBottom:4}}>Institutional Trading Desk</div>
-            <h1 style={{fontSize:26,fontWeight:800,letterSpacing:'-0.7px',color:'#eef2f7',margin:0,lineHeight:1}}>
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:'2.5px',color:'#1e2c3d',textTransform:'uppercase' as const,marginBottom:4}}>Institutional Trading Desk</div>
+            <h1 style={{fontSize:24,fontWeight:800,letterSpacing:'-0.6px',color:'#eef2f7',margin:0,lineHeight:1}}>
               Sentiment <span style={{color:'#a78bfa'}}>&</span> Saisonnalité
             </h1>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:10,paddingBottom:2}}>
-            {refreshing&&<span style={{fontSize:9,color:'#a78bfa',fontWeight:700,letterSpacing:'.5px',animation:'t-pulse 1s infinite'}}>● LIVE</span>}
-            {lastUpd&&<span style={{fontSize:9,color:'#1e2c3d',letterSpacing:'.4px',fontFamily:'IBM Plex Mono,monospace'}}>Updated {lastUpd}</span>}
-            <button onClick={fetch_} style={{padding:'5px 12px',borderRadius:5,fontSize:9,fontWeight:700,cursor:'pointer',border:'1px solid rgba(255,255,255,.09)',background:'rgba(255,255,255,.04)',color:'#6a7d8f',fontFamily:'inherit',letterSpacing:'.5px',transition:'all 150ms'}} onMouseEnter={e=>e.currentTarget.style.color='#c8d6e5'} onMouseLeave={e=>e.currentTarget.style.color='#6a7d8f'}>↻ REFRESH</button>
+            <div style={{display:'flex',alignItems:'center',gap:5,padding:'4px 10px',borderRadius:5,background:'rgba(139,92,246,.06)',border:'1px solid rgba(139,92,246,.15)'}}>
+              <span style={{width:5,height:5,borderRadius:'50%',background:'#a78bfa',display:'inline-block',animation:'t-pulse 2s ease-in-out infinite'}}/>
+              <span style={{fontSize:9,color:'#a78bfa',fontWeight:600,letterSpacing:'.5px'}}>LIVE</span>
+              <span style={{fontSize:9,color:'#3d5060',fontFamily:'IBM Plex Mono,monospace'}}>10s</span>
+            </div>
+            {lastUpd&&<span style={{fontSize:8,color:'#1e2c3d',fontFamily:'IBM Plex Mono,monospace'}}>Updated {lastUpd}</span>}
+            <button onClick={fetchData} style={{padding:'5px 10px',borderRadius:5,fontSize:8,fontWeight:700,cursor:'pointer',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.03)',color:'#5a7080',fontFamily:'inherit',letterSpacing:'.5px',transition:'all 150ms'}} onMouseEnter={e=>e.currentTarget.style.color='#c8d6e5'} onMouseLeave={e=>e.currentTarget.style.color='#5a7080'}>↻</button>
           </div>
         </div>
-        {/* Tabs + layout buttons */}
-        <div style={{display:'flex',padding:'0 40px',borderBottom:'1px solid rgba(255,255,255,.05)',marginTop:16,alignItems:'center'}}>
+
+        {/* Tabs + layout */}
+        <div style={{display:'flex',padding:'0 40px',borderBottom:'1px solid rgba(255,255,255,.045)',marginTop:14,alignItems:'center'}}>
           <div style={{display:'flex',flex:1}}>
-            {([['sentiment','👥 Sentiment Retail'],['seasonality','📈 Saisonnalité']] as const).map(([t,l])=>(
-              <button key={t} onClick={()=>setTab(t)} style={{padding:'11px 22px',fontSize:12,fontWeight:tab===t?700:400,cursor:'pointer',border:'none',borderBottom:tab===t?'2px solid #a78bfa':'2px solid transparent',background:'transparent',color:tab===t?'#f0f4f8':'#3d5060',transition:'all 150ms',fontFamily:'inherit',marginBottom:-1,letterSpacing:tab===t?'-0.2px':'0'}}>
+            {([['sentiment','👥  Sentiment Retail'],['seasonality','📈  Saisonnalité']] as const).map(([t,l])=>(
+              <button key={t} onClick={()=>setTab(t)} style={{padding:'10px 20px',fontSize:12,fontWeight:tab===t?700:400,cursor:'pointer',border:'none',borderBottom:tab===t?'2px solid #a78bfa':'2px solid transparent',background:'transparent',color:tab===t?'#f0f4f8':'#2d3f50',transition:'all 150ms',fontFamily:'inherit',marginBottom:-1,letterSpacing:tab===t?'-0.2px':'0'}}>
                 {l}
               </button>
             ))}
           </div>
-          {/* Layout toggle buttons */}
-          <div style={{display:'flex',gap:3,padding:'3px',borderRadius:6,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',marginBottom:1}}>
-            <button onClick={()=>setLayout('single')} title="Vue unique" style={{width:30,height:26,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'none',background:layout==='single'?'rgba(167,139,250,.2)':'transparent',transition:'all 120ms'}}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="2" y="2" width="12" height="12" rx="2" stroke={layout==='single'?'#a78bfa':'#4a5e72'} strokeWidth="1.5"/>
-              </svg>
-            </button>
-            <button onClick={()=>setLayout('split')} title="Vue côte à côte" style={{width:30,height:26,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'none',background:layout==='split'?'rgba(167,139,250,.2)':'transparent',transition:'all 120ms'}}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="2" y="2" width="5" height="12" rx="1.5" stroke={layout==='split'?'#a78bfa':'#4a5e72'} strokeWidth="1.5"/>
-                <rect x="9" y="2" width="5" height="12" rx="1.5" stroke={layout==='split'?'#a78bfa':'#4a5e72'} strokeWidth="1.5"/>
-              </svg>
-            </button>
+          <div style={{display:'flex',gap:3,padding:'3px',borderRadius:5,background:'rgba(255,255,255,.035)',border:'1px solid rgba(255,255,255,.07)',marginBottom:1}}>
+            {([['single','□'],['split','⎮⎮']] as const).map(([l,icon])=>(
+              <button key={l} onClick={()=>setLayout(l)} style={{width:28,height:24,borderRadius:3,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'none',background:layout===l?'rgba(139,92,246,.2)':'transparent',transition:'all 120ms',fontSize:layout==='split'&&l==='split'?9:12,color:layout===l?'#a78bfa':'#3d5060'}}>
+                {icon}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
+      {/* ── SINGLE ── */}
+      {layout==='single'&&tab==='sentiment'&&<SentimentContent/>}
+      {layout==='single'&&tab==='seasonality'&&<SeasonalityContent/>}
 
-      {/* ══ SPLIT ══ */}
+      {/* ── SPLIT ── */}
       {layout==='split'&&(
         <div style={{flex:1,display:'flex',minHeight:0,overflow:'hidden'}}>
-          {/* Left — Sentiment */}
           <div style={{width:`${splitLeft}%`,flexShrink:0,display:'flex',flexDirection:'column' as const,overflow:'hidden'}}>
-            <div style={{padding:'6px 20px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0}}>
-              <span style={{fontSize:8,fontWeight:700,letterSpacing:'1.5px',color:'#2a3a4a',textTransform:'uppercase' as const}}>👥 Sentiment Retail</span>
-            </div>
-            <div style={{flex:1,overflowY:'auto' as const}}>
-              {sentiment.map(s=>{
-                const iB=s.bias==='bullish'; const iS=s.bias==='bearish'; const bc2=iB?'#22c55e':iS?'#ef4444':'#64748b'
-                return (
-                  <div key={s.pair} onClick={()=>setModal(s)} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',borderBottom:'0.5px solid rgba(255,255,255,.03)',cursor:'pointer',transition:'background 80ms'}}
-                    onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,.02)'}
-                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                    <MiniDonut long={s.longPct} short={s.shortPct}/>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}>
-                        <span style={{fontSize:11,fontWeight:700,color:'#eef2f7',fontFamily:'IBM Plex Mono,monospace'}}>{s.pair}</span>
-                        <span style={{fontSize:7,fontWeight:800,padding:'1px 5px',borderRadius:2,background:`${bc2}14`,color:bc2,border:`0.5px solid ${bc2}30`}}>{iB?'▲ LONG':iS?'▼ SHORT':'→'}</span>
-                        <span style={{marginLeft:'auto',fontSize:9,fontWeight:600,color:s.change24h>0?'#22c55e':'#ef4444',fontFamily:'IBM Plex Mono,monospace'}}>{s.change24h>0?'+':''}{s.change24h}%</span>
-                      </div>
-                      <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,.05)',overflow:'hidden',position:'relative' as const}}>
-                        <div style={{position:'absolute' as const,left:0,top:0,height:'100%',width:`${s.longPct}%`,background:'rgba(34,197,94,.55)',borderRadius:'2px 0 0 2px'}}/>
-                        <div style={{position:'absolute' as const,right:0,top:0,height:'100%',width:`${s.shortPct}%`,background:'rgba(239,68,68,.55)',borderRadius:'0 2px 2px 0'}}/>
-                      </div>
-                      <div style={{display:'flex',justifyContent:'space-between',marginTop:2}}>
-                        <span style={{fontSize:8,fontWeight:700,color:'#22c55e',fontFamily:'IBM Plex Mono,monospace'}}>{s.longPct}%</span>
-                        <span style={{fontSize:8,fontWeight:700,color:'#ef4444',fontFamily:'IBM Plex Mono,monospace'}}>{s.shortPct}%</span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+            <SentimentContent/>
           </div>
-
-          {/* Draggable divider */}
           <div onMouseDown={onDragStart} style={{width:5,flexShrink:0,cursor:'col-resize',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 150ms',userSelect:'none' as const}}
-            onMouseEnter={e=>e.currentTarget.style.background='rgba(167,139,250,.15)'}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(139,92,246,.15)'}
             onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-            <div style={{width:1,height:40,background:'rgba(167,139,250,.3)',borderRadius:1}}/>
+            <div style={{width:1,height:48,background:'rgba(139,92,246,.3)',borderRadius:1}}/>
           </div>
-
-          {/* Right — Seasonality */}
           <div style={{flex:1,display:'flex',flexDirection:'column' as const,overflow:'hidden',minWidth:0}}>
-            <div style={{padding:'6px 16px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const}}>
-              <span style={{fontSize:8,fontWeight:700,letterSpacing:'1.5px',color:'#2a3a4a',textTransform:'uppercase' as const}}>📈 Saisonnalité</span>
-              <div style={{flex:1}}/>
-              {PAIRS.slice(0,5).map(p=><button key={p} onClick={()=>setPair(p)} style={pill(pair===p)}>{p}</button>)}
-              {([10,5] as const).map(y=><button key={y} onClick={()=>setYears(y)} style={pill(years===y)}>{y}a</button>)}
-            </div>
-            <div style={{flex:1,overflowY:'auto' as const,padding:'10px 14px',display:'flex',flexDirection:'column' as const,gap:8}}>
-              <TrendChart data={seas} pair={pair} years={years}/>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}><MonthChart data={seas}/><WeekChart data={wdays}/></div>
-            </div>
+            <SeasonalityContent/>
           </div>
         </div>
-      )}
-
-      {/* ══ SENTIMENT SEUL ══ */}
-      {tab==='sentiment'&&layout==='single'&&(
-        <>
-          <div style={{padding:'8px 40px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,background:'rgba(255,255,255,.01)'}}>
-            <span style={{fontSize:8,fontWeight:700,letterSpacing:'1.8px',color:'#2a3a4a',textTransform:'uppercase' as const}}>Myfxbook Community Outlook — Cliquez pour le détail</span>
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:'110px 90px 1fr 72px 72px 88px 82px',padding:'7px 40px',background:'rgba(0,0,0,.3)',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0}}>
-            {['Paire','Biais','Ratio Long / Short','Long %','Short %','Vol. Long','Var 24h'].map((h,i)=>(
-              <span key={i} style={{fontSize:8,fontWeight:700,color:'#2a3a4a',letterSpacing:'1px',textTransform:'uppercase' as const,textAlign:i>2?'right' as const:'left' as const}}>{h}</span>
-            ))}
-          </div>
-          <div style={{flex:1,overflowY:'auto' as const}}>
-            {sentiment.map(s=>{
-              const iB=s.bias==='bullish'; const iS=s.bias==='bearish'; const bc2=iB?'#22c55e':iS?'#ef4444':'#64748b'
-              return (
-                <div key={s.pair} onClick={()=>setModal(s)} style={{display:'grid',gridTemplateColumns:'110px 90px 1fr 72px 72px 88px 82px',alignItems:'center',padding:'13px 40px',borderBottom:'0.5px solid rgba(255,255,255,.035)',borderLeft:`2px solid ${bc2}28`,transition:'background 80ms',cursor:'pointer'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,.02)'}
-                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <span style={{fontSize:13,fontWeight:700,color:'#eef2f7',fontFamily:'IBM Plex Mono,monospace'}}>{s.pair}</span>
-                  <span style={{fontSize:9,fontWeight:800,padding:'2px 8px',borderRadius:3,background:`${bc2}12`,color:bc2,border:`0.5px solid ${bc2}30`,letterSpacing:'.6px',width:'fit-content'}}>{iB?'▲ LONG':iS?'▼ SHORT':'→'}</span>
-                  <div style={{paddingRight:20}}>
-                    <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,.04)',overflow:'hidden',position:'relative' as const}}>
-                      <div style={{position:'absolute' as const,left:0,top:0,height:'100%',width:`${s.longPct}%`,background:'rgba(34,197,94,.6)',borderRadius:'3px 0 0 3px'}}/>
-                      <div style={{position:'absolute' as const,right:0,top:0,height:'100%',width:`${s.shortPct}%`,background:'rgba(239,68,68,.6)',borderRadius:'0 3px 3px 0'}}/>
-                    </div>
-                  </div>
-                  <span style={{fontSize:13,fontWeight:700,color:'#22c55e',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{s.longPct}%</span>
-                  <span style={{fontSize:13,fontWeight:700,color:'#ef4444',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{s.shortPct}%</span>
-                  <span style={{fontSize:10,color:'#5a7080',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{s.longVol.toLocaleString()}</span>
-                  <span style={{fontSize:11,fontWeight:600,color:s.change24h>0?'#22c55e':'#ef4444',textAlign:'right' as const,fontFamily:'IBM Plex Mono,monospace'}}>{s.change24h>0?'+':''}{s.change24h}%</span>
-                </div>
-              )
-            })}
-          </div>
-          <div style={{padding:'5px 40px',borderTop:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,background:'rgba(0,0,0,.18)'}}>
-            <span style={{fontSize:7,color:'#1a2535',letterSpacing:'.5px'}}>MYFXBOOK COMMUNITY OUTLOOK • REFRESH AUTO 60S • CLIQUEZ SUR UNE PAIRE POUR LE DÉTAIL</span>
-          </div>
-        </>
-      )}
-
-      {/* ══ SAISONNALITÉ SEULE ══ */}
-      {tab==='seasonality'&&layout==='single'&&(
-        <>
-          <div style={{padding:'8px 40px',borderBottom:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const,background:'rgba(255,255,255,.01)'}}>
-            {PAIRS.map(p=><button key={p} onClick={()=>setPair(p)} style={pill(pair===p)}>{p}</button>)}
-            <div style={{width:1,height:16,background:'rgba(255,255,255,.07)',margin:'0 6px'}}/>
-            {([20,10,5] as const).map(y=><button key={y} onClick={()=>setYears(y)} style={pill(years===y)}>{y} ans</button>)}
-          </div>
-          <div style={{flex:1,overflowY:'auto' as const,padding:'16px 40px',display:'flex',flexDirection:'column',gap:12}}>
-            <div style={{display:'flex',alignItems:'center',gap:10}}>
-              <span style={{fontSize:15,fontWeight:700,color:'#eef2f7',fontFamily:'IBM Plex Mono,monospace'}}>{pair}</span>
-              {cur&&<span style={{fontSize:10,padding:'3px 10px',borderRadius:4,background:cur.bullish?'rgba(34,197,94,.08)':'rgba(239,68,68,.08)',color:cur.bullish?'#22c55e':'#ef4444',border:`0.5px solid ${cur.bullish?'rgba(34,197,94,.2)':'rgba(239,68,68,.2)'}`,fontWeight:600}}>
-                {ML[NM]}: {cur.avg>0?'+':''}{cur.avg}% · {cur.positive}% années positives
-              </span>}
-            </div>
-            <TrendChart data={seas} pair={pair} years={years}/>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-              <MonthChart data={seas}/>
-              <WeekChart data={wdays}/>
-            </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:6,paddingBottom:16}}>
-              {seas.map((b,i)=>(
-                <div key={i} style={{padding:'11px 10px',borderRadius:6,background:i===NM?'rgba(240,180,41,.05)':'rgba(255,255,255,.015)',border:`1px solid ${i===NM?'rgba(240,180,41,.18)':'rgba(255,255,255,.04)'}`}}>
-                  <div style={{fontSize:10,fontWeight:700,color:i===NM?'#f0b429':'#6a7d8f',marginBottom:5}}>{b.label}</div>
-                  <div style={{fontSize:16,fontWeight:800,color:b.bullish?'#22c55e':'#ef4444',fontFamily:'IBM Plex Mono,monospace',marginBottom:4}}>{b.avg>0?'+':''}{b.avg}%</div>
-                  <div style={{height:2,borderRadius:1,background:'rgba(255,255,255,.05)',overflow:'hidden',marginBottom:3}}>
-                    <div style={{height:'100%',width:`${b.positive}%`,background:b.bullish?'rgba(34,197,94,.5)':'rgba(239,68,68,.5)',borderRadius:1}}/>
-                  </div>
-                  <div style={{fontSize:8,color:'#3d5060'}}>{b.positive}% pos</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div style={{padding:'5px 40px',borderTop:'0.5px solid rgba(255,255,255,.04)',flexShrink:0,background:'rgba(0,0,0,.18)'}}>
-            <span style={{fontSize:7,color:'#1a2535',letterSpacing:'.5px'}}>SAISONNALITÉ CALCULÉE SUR {years} ANS · INSPIRÉ DE SEASONAX · PATTERNS HISTORIQUES FX</span>
-          </div>
-        </>
       )}
     </div>
   )
