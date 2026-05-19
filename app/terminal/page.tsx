@@ -204,6 +204,40 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
           </div>
         </section>
 
+        <Reveal delay={0}>
+          <section style={{ padding:'60px 5vw 80px', maxWidth:1080, margin:'0 auto', borderTop:'0.5px solid rgba(255,255,255,.05)' }}>
+            <div style={{ textAlign:'center', marginBottom:48 }}>
+              <h2 style={{ fontSize:'clamp(22px,3vw,34px)', fontWeight:800, color:'#f0f4f8', letterSpacing:'-.8px', margin:0, marginBottom:12 }}>
+                {lang === 'fr' ? 'Conçu pour les traders sérieux' : 'Built for serious traders'}
+              </h2>
+              <p style={{ fontSize:14, color:'#4a5e72', lineHeight:1.7, margin:'0 auto', maxWidth:480 }}>
+                {lang === 'fr' ? 'Pas un dashboard générique. Un vrai terminal institutionnel.' : 'Not a generic dashboard. A real institutional terminal.'}
+              </p>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+              {[
+                { icon:'⚡', title: lang==='fr'?'Données live 30s':'30s live data', desc: lang==='fr'?'Refresh automatique sur tous les modules. Sentiment, news, calendrier — toujours à jour.':'Auto-refresh across all modules. Sentiment, news, calendar — always current.' },
+                { icon:'🧠', title: lang==='fr'?'Signaux contrarians':'Contrarian signals', desc: lang==='fr'?'Détection automatique des crowds extrêmes. Signal contrarian généré en temps réel.':'Automatic extreme crowd detection. Contrarian signal generated in real time.' },
+                { icon:'📊', title: lang==='fr'?'Saisonnalité 20 ans':'20yr seasonality', desc: lang==='fr'?'Patterns historiques sur 5/10/15/20 ans. Heatmap, trend line, statistiques avancées.':'Historical patterns over 5/10/15/20 years. Heatmap, trend line, advanced stats.' },
+                { icon:'📰', title: lang==='fr'?'Feed institutionnel':'Institutional feed', desc: lang==='fr'?'InvestingLive + FinancialJuice + Reuters. Catégorisé, filtrable, en temps réel.':'InvestingLive + FinancialJuice + Reuters. Categorized, filterable, real-time.' },
+                { icon:'🎯', title: lang==='fr'?'Event Trades':'Event Trades', desc: lang==='fr'?'Scénarios bull/bear/base sur chaque événement macro. Niveaux, levels, probabilités.':'Bull/bear/base scenarios for each macro event. Levels, targets, probabilities.' },
+                { icon:'🔒', title: lang==='fr'?'Grade institutionnel':'Institutional grade', desc: lang==='fr'?'Bloomberg-quality. COT data, OIS pricing, sentiment retail — tout en un seul terminal.':'Bloomberg-quality. COT data, OIS pricing, retail sentiment — one terminal.' },
+              ].map((f, i) => (
+                <Reveal key={f.title} delay={i * 0.07}>
+                  <div style={{ padding:'22px', borderRadius:12, background:'rgba(255,255,255,.025)', border:'0.5px solid rgba(255,255,255,.06)', transition:'all 200ms' }}
+                    onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,.045)'; e.currentTarget.style.borderColor='rgba(255,255,255,.1)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,.025)'; e.currentTarget.style.borderColor='rgba(255,255,255,.06)' }}>
+                    <div style={{ fontSize:26, marginBottom:12 }}>{f.icon}</div>
+                    <h3 style={{ fontSize:14, fontWeight:700, color:'#f0f4f8', letterSpacing:'-.2px', marginBottom:8 }}>{f.title}</h3>
+                    <p style={{ fontSize:12, color:'#5a7080', lineHeight:1.65 }}>{f.desc}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+
+        {/* ── CTA strip ── */}
         {/* ── Modules grid ── */}
         <section style={{ padding:'0 5vw 70px', maxWidth:1120, margin:'0 auto' }}>
 
@@ -248,40 +282,6 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
         </Reveal>
 
         {/* ── Why PrimeMarket ── */}
-        <Reveal delay={0}>
-          <section style={{ padding:'60px 5vw 80px', maxWidth:1080, margin:'0 auto', borderTop:'0.5px solid rgba(255,255,255,.05)' }}>
-            <div style={{ textAlign:'center', marginBottom:48 }}>
-              <h2 style={{ fontSize:'clamp(22px,3vw,34px)', fontWeight:800, color:'#f0f4f8', letterSpacing:'-.8px', margin:0, marginBottom:12 }}>
-                {lang === 'fr' ? 'Conçu pour les traders sérieux' : 'Built for serious traders'}
-              </h2>
-              <p style={{ fontSize:14, color:'#4a5e72', lineHeight:1.7, margin:'0 auto', maxWidth:480 }}>
-                {lang === 'fr' ? 'Pas un dashboard générique. Un vrai terminal institutionnel.' : 'Not a generic dashboard. A real institutional terminal.'}
-              </p>
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
-              {[
-                { icon:'⚡', title: lang==='fr'?'Données live 30s':'30s live data', desc: lang==='fr'?'Refresh automatique sur tous les modules. Sentiment, news, calendrier — toujours à jour.':'Auto-refresh across all modules. Sentiment, news, calendar — always current.' },
-                { icon:'🧠', title: lang==='fr'?'Signaux contrarians':'Contrarian signals', desc: lang==='fr'?'Détection automatique des crowds extrêmes. Signal contrarian généré en temps réel.':'Automatic extreme crowd detection. Contrarian signal generated in real time.' },
-                { icon:'📊', title: lang==='fr'?'Saisonnalité 20 ans':'20yr seasonality', desc: lang==='fr'?'Patterns historiques sur 5/10/15/20 ans. Heatmap, trend line, statistiques avancées.':'Historical patterns over 5/10/15/20 years. Heatmap, trend line, advanced stats.' },
-                { icon:'📰', title: lang==='fr'?'Feed institutionnel':'Institutional feed', desc: lang==='fr'?'InvestingLive + FinancialJuice + Reuters. Catégorisé, filtrable, en temps réel.':'InvestingLive + FinancialJuice + Reuters. Categorized, filterable, real-time.' },
-                { icon:'🎯', title: lang==='fr'?'Event Trades':'Event Trades', desc: lang==='fr'?'Scénarios bull/bear/base sur chaque événement macro. Niveaux, levels, probabilités.':'Bull/bear/base scenarios for each macro event. Levels, targets, probabilities.' },
-                { icon:'🔒', title: lang==='fr'?'Grade institutionnel':'Institutional grade', desc: lang==='fr'?'Bloomberg-quality. COT data, OIS pricing, sentiment retail — tout en un seul terminal.':'Bloomberg-quality. COT data, OIS pricing, retail sentiment — one terminal.' },
-              ].map((f, i) => (
-                <Reveal key={f.title} delay={i * 0.07}>
-                  <div style={{ padding:'22px', borderRadius:12, background:'rgba(255,255,255,.025)', border:'0.5px solid rgba(255,255,255,.06)', transition:'all 200ms' }}
-                    onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,.045)'; e.currentTarget.style.borderColor='rgba(255,255,255,.1)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,.025)'; e.currentTarget.style.borderColor='rgba(255,255,255,.06)' }}>
-                    <div style={{ fontSize:26, marginBottom:12 }}>{f.icon}</div>
-                    <h3 style={{ fontSize:14, fontWeight:700, color:'#f0f4f8', letterSpacing:'-.2px', marginBottom:8 }}>{f.title}</h3>
-                    <p style={{ fontSize:12, color:'#5a7080', lineHeight:1.65 }}>{f.desc}</p>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-          </section>
-        </Reveal>
-
-        {/* ── CTA strip ── */}
         <Reveal delay={0}>
           <section style={{ padding:'60px 5vw 80px', textAlign:'center' }}>
             <div style={{ maxWidth:540, margin:'0 auto', padding:'40px', borderRadius:20, background:'rgba(240,180,41,.05)', border:'1px solid rgba(240,180,41,.18)', position:'relative', overflowY:'auto', overflowX:'hidden' }}>
