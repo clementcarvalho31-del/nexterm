@@ -1,75 +1,75 @@
 'use client'
 import { useTerminalStore } from '@/store/terminal'
-import { formatPrice } from '@/lib/utils'
 import { PAIRS } from '@/lib/data'
 
 export function WatchlistBar() {
-  const pairs          = useTerminalStore(s => s.pairs)
-  const selectedIdx    = useTerminalStore(s => s.selectedPairIndex)
-  const selectPair     = useTerminalStore(s => s.selectPair)
+  const ticks         = useTerminalStore(s => s.ticks)
+  const selectedSym   = useTerminalStore(s => s.selectedSymbol)
+  const setSymbol     = useTerminalStore(s => s.setSelectedSymbol)
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'stretch', height: 34, flexShrink: 0,
-      background: 'linear-gradient(180deg, #060a14 0%, #050810 100%)',
-      borderBottom: '1px solid rgba(255,255,255,.05)',
-      overflowX: 'auto', overflowY: 'hidden',
+      display: 'flex', alignItems: 'center', height: 36, flexShrink: 0,
+      background: 'var(--t-surface-panel)',
+      borderBottom: '0.5px solid var(--t-border-default)',
+      overflowX: 'auto', overflowY: 'hidden', padding: '0 6px', gap: 1,
     }}>
-      {pairs.map((pair, i) => {
-        const isUp  = pair.changePct >= 0
-        const isSel = i === selectedIdx
-        const pip   = PAIRS[i].pip
-        const color = isUp ? '#22c55e' : '#ef4444'
+      {PAIRS.map(pair => {
+        const tick      = ticks[pair.name]
+        const price     = tick?.price     ?? pair.price
+        const changePct = tick?.changePct ?? pair.changePct
+        const isUp      = changePct >= 0
+        const isSel     = pair.name === selectedSym
+        const dec       = pair.pip < 0.001 ? 3 : 5
+        const upColor   = 'var(--t-market-up)'
+        const dnColor   = 'var(--t-market-down)'
+        const priceColor = isUp ? upColor : dnColor
 
         return (
-          <button key={pair.name} onClick={() => selectPair(i)} style={{
-            display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px',
-            borderRight: '1px solid rgba(255,255,255,.04)',
-            borderBottom: isSel ? '1.5px solid #f0b429' : '1.5px solid transparent',
-            background: isSel ? 'rgba(240,180,41,.04)' : 'transparent',
-            cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 120ms',
-            flexShrink: 0,
-          }}
-            onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = 'rgba(255,255,255,.025)' }}
+          <button key={pair.name} onClick={() => setSymbol(pair.name)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '0 11px',
+              height: 28, cursor: 'pointer', borderRadius: 5, flexShrink: 0,
+              fontFamily: 'var(--t-font-mono)',
+              background:   isSel ? 'var(--t-surface-active)'  : 'transparent',
+              border:       isSel ? '0.5px solid var(--t-border-strong)' : '0.5px solid transparent',
+              transition:   'all 100ms',
+              borderBottom: isSel ? '1.5px solid var(--t-accent-primary)' : '1.5px solid transparent',
+            }}
+            onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = 'var(--t-surface-hover)' }}
             onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = 'transparent' }}
           >
-            {/* Pair name */}
-            <span style={{
-              fontSize: 10, fontWeight: 700, color: isSel ? '#f0f4f8' : '#8a9db5',
-              fontFamily: 'var(--font-mono)', letterSpacing: '0.2px',
-            }}>{pair.name}</span>
+            {/* Symbol */}
+            <span style={{ fontSize: 10, fontWeight: isSel ? 700 : 600, letterSpacing: '0.3px', color: isSel ? 'var(--t-text-heading)' : 'var(--t-text-secondary)' }}>
+              {pair.name}
+            </span>
 
             {/* Price */}
-            <span style={{
-              fontSize: 11, fontWeight: 600, color: color,
-              fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
-              transition: 'color 300ms',
-            }}>{formatPrice(pair.price, pip)}</span>
+            <span style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: priceColor, fontWeight: isSel ? 600 : 400, transition: 'color 300ms' }}>
+              {price.toFixed(dec)}
+            </span>
 
-            {/* Change */}
-            <span style={{
-              fontSize: 9, color: color, fontFamily: 'var(--font-mono)',
-              fontVariantNumeric: 'tabular-nums',
-            }}>{isUp ? '+' : ''}{pair.changePct.toFixed(2)}%</span>
+            {/* Change % */}
+            <span style={{ fontSize: 9, color: priceColor, opacity: 0.8, fontVariantNumeric: 'tabular-nums' }}>
+              {isUp ? '+' : ''}{changePct.toFixed(2)}%
+            </span>
 
-            {/* Mini indicator */}
-            <span style={{
-              width: 3, height: 3, borderRadius: '50%', background: color,
-              display: 'inline-block', opacity: 0.7,
-            }} />
+            {/* Direction dot */}
+            <span style={{ width: 3, height: 3, borderRadius: '50%', background: priceColor, display: 'inline-block', opacity: 0.7, flexShrink: 0 }}/>
           </button>
         )
       })}
 
-      {/* Add pair button */}
+      {/* Add pair */}
       <button style={{
-        padding: '0 12px', color: '#2d3f50', fontSize: 14,
-        background: 'transparent', border: 'none', cursor: 'pointer',
-        borderLeft: '1px solid rgba(255,255,255,.04)', flexShrink: 0,
-        transition: 'color 150ms',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 28, height: 28, borderRadius: 5, flexShrink: 0,
+        background: 'transparent', border: '0.5px solid transparent',
+        color: 'var(--t-text-muted)', fontSize: 16, cursor: 'pointer',
+        marginLeft: 4, transition: 'all 120ms',
       }}
-        onMouseEnter={e => e.currentTarget.style.color = '#5a7080'}
-        onMouseLeave={e => e.currentTarget.style.color = '#2d3f50'}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-surface-hover)'; e.currentTarget.style.color = 'var(--t-text-secondary)'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--t-text-muted)'; }}
       >+</button>
     </div>
   )

@@ -1,15 +1,22 @@
 'use client'
 import { BANK_RESEARCH, SENTIMENT_DATA, PROP_INDICATORS, PAIR_BIASES } from '@/lib/data'
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Block({ title, count, children }: { title: string; count?: number; children: React.ReactNode }) {
   return (
     <div style={{ flexShrink: 0 }}>
       <div style={{
-        padding: '4px 10px', borderBottom: '1px solid rgba(255,255,255,.04)',
-        display: 'flex', alignItems: 'center', gap: 5,
-        background: 'rgba(255,255,255,.01)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 10px', height: 28, flexShrink: 0,
+        background: 'var(--t-surface-elevated)',
+        borderBottom: '0.5px solid var(--t-border-default)',
+        borderTop: '0.5px solid var(--t-border-default)',
       }}>
-        <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '1.5px', color: '#2d3f50', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>{title}</span>
+        <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '1.2px', color: 'var(--t-text-muted)', fontFamily: 'var(--t-font-mono)', textTransform: 'uppercase' }}>
+          {title}
+        </span>
+        {count !== undefined && (
+          <span style={{ fontSize: 7, color: 'var(--t-text-disabled)', fontFamily: 'var(--t-font-mono)' }}>{count}</span>
+        )}
       </div>
       {children}
     </div>
@@ -18,102 +25,98 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export function RightSidebar() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#04070f', overflowY: 'auto' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--t-surface-base)', overflowY: 'auto' }}>
 
-      {/* Retail Sentiment */}
-      <Section title="Retail Sentiment">
-        <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {SENTIMENT_DATA.map(d => {
-            const isLong = d.longPct > 50
-            return (
-              <div key={d.pair}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                  <span style={{ fontSize: 9, fontWeight: 600, color: '#c8d6e5', fontFamily: 'var(--font-mono)' }}>{d.pair}</span>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <span style={{ fontSize: 8, color: '#22c55e', fontFamily: 'var(--font-mono)' }}>{d.longPct}%L</span>
-                    <span style={{ fontSize: 8, color: '#ef4444', fontFamily: 'var(--font-mono)' }}>{d.shortPct}%S</span>
-                  </div>
-                </div>
-                <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden', position: 'relative' }}>
-                  <div style={{ height: '100%', width: `${d.longPct}%`, background: 'rgba(34,197,94,.5)', borderRadius: '2px 0 0 2px', transition: 'width 500ms' }} />
-                  <div style={{ position: 'absolute', top: 0, right: 0, height: '100%', width: `${d.shortPct}%`, background: 'rgba(239,68,68,.5)', borderRadius: '0 2px 2px 0' }} />
+      {/* ── Retail Sentiment ── */}
+      <Block title="Retail Sentiment" count={SENTIMENT_DATA.length}>
+        <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {SENTIMENT_DATA.map(d => (
+            <div key={d.pair}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--t-text-secondary)', fontFamily: 'var(--t-font-mono)' }}>{d.pair}</span>
+                <div style={{ display: 'flex', gap: 5 }}>
+                  <span style={{ fontSize: 8, fontWeight: 600, color: 'var(--t-market-up)', fontFamily: 'var(--t-font-mono)' }}>{d.longPct}%L</span>
+                  <span style={{ fontSize: 8, fontWeight: 600, color: 'var(--t-market-down)', fontFamily: 'var(--t-font-mono)' }}>{d.shortPct}%S</span>
                 </div>
               </div>
-            )
-          })}
-          <div style={{ paddingTop: 4, borderTop: '1px solid rgba(255,255,255,.04)', fontSize: 7, color: '#1e2c3a', fontFamily: 'var(--font-mono)' }}>
-            IG · OANDA · Myfxbook · Live 15m
+              <div style={{ height: 3, borderRadius: 2, background: 'var(--t-surface-hover)', overflow: 'hidden', position: 'relative' }}>
+                <div style={{ height: '100%', width: `${d.longPct}%`, background: 'var(--t-market-up)', opacity: 0.5, borderRadius: '2px 0 0 2px', transition: 'width 500ms' }}/>
+                <div style={{ position: 'absolute', top: 0, right: 0, height: '100%', width: `${d.shortPct}%`, background: 'var(--t-market-down)', opacity: 0.5, borderRadius: '0 2px 2px 0' }}/>
+              </div>
+            </div>
+          ))}
+          <div style={{ paddingTop: 5, borderTop: '0.5px solid var(--t-border-subtle)', fontSize: 7, color: 'var(--t-text-disabled)', fontFamily: 'var(--t-font-mono)' }}>
+            IG · OANDA · Myfxbook · 15m delay
           </div>
         </div>
-      </Section>
+      </Block>
 
-      {/* Prop Indicators */}
-      <Section title="Prop. Indicators">
-        <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+      {/* ── Prop Indicators ── */}
+      <Block title="Prop. Indicators">
+        <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 5 }}>
           {PROP_INDICATORS.map(ind => (
-            <div key={ind.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 8, color: '#5a7080', flex: 1, fontFamily: 'var(--font-sans)' }}>{ind.name}</span>
-              <div style={{ width: 44, height: 3, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden', flexShrink: 0 }}>
-                <div style={{ height: '100%', width: `${(ind.value/ind.max)*100}%`, background: ind.color, borderRadius: 2, transition: 'width 500ms' }} />
+            <div key={ind.name} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ fontSize: 8, color: 'var(--t-text-muted)', flex: 1, fontFamily: 'var(--t-font-sans)' }}>{ind.name}</span>
+              <div style={{ width: 46, height: 3, borderRadius: 2, background: 'var(--t-surface-active)', overflow: 'hidden', flexShrink: 0 }}>
+                <div style={{ height: '100%', width: `${(ind.value / ind.max) * 100}%`, background: ind.color, borderRadius: 2, transition: 'width 500ms' }}/>
               </div>
-              <span style={{ fontSize: 8, fontWeight: 700, color: ind.color, fontFamily: 'var(--font-mono)', width: 20, textAlign: 'right' }}>{ind.value}</span>
+              <span style={{ fontSize: 8, fontWeight: 700, color: ind.color, fontFamily: 'var(--t-font-mono)', width: 18, textAlign: 'right', flexShrink: 0 }}>{ind.value}</span>
             </div>
           ))}
         </div>
-      </Section>
+      </Block>
 
-      {/* Directional Bias */}
-      <Section title="Pair Bias">
-        <div style={{ padding: '6px 10px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
+      {/* ── Pair Bias ── */}
+      <Block title="Directional Bias">
+        <div style={{ padding: '7px 10px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
           {PAIR_BIASES.map(b => {
-            const c = b.direction === 'Bullish' ? '#22c55e' : b.direction === 'Bearish' ? '#ef4444' : '#f0b429'
+            const c = b.direction === 'Bullish' ? 'var(--t-market-up)' : b.direction === 'Bearish' ? 'var(--t-market-down)' : 'var(--t-accent-primary)'
+            const rawC = b.direction === 'Bullish' ? '#22c55e' : b.direction === 'Bearish' ? '#ef4444' : '#f0b429'
             const arrow = b.direction === 'Bullish' ? '▲' : b.direction === 'Bearish' ? '▼' : '→'
             return (
               <div key={b.pair} style={{
-                padding: '5px 6px', borderRadius: 4,
-                background: 'rgba(255,255,255,.02)', border: '0.5px solid rgba(255,255,255,.05)',
+                padding: '6px 7px', borderRadius: 5,
+                background: `${rawC}08`,
+                border: `0.5px solid ${rawC}20`,
               }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: '#c8d6e5', fontFamily: 'var(--font-mono)', marginBottom: 2 }}>{b.pair}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <span style={{ fontSize: 9, color: c }}>{arrow}</span>
-                  <span style={{ fontSize: 8, color: c }}>{b.confidence}%</span>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--t-text-secondary)', fontFamily: 'var(--t-font-mono)', marginBottom: 3 }}>{b.pair}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 10, color: c }}>{arrow}</span>
+                  <span style={{ fontSize: 8, fontWeight: 600, color: c }}>{b.confidence}%</span>
                 </div>
               </div>
             )
           })}
         </div>
-      </Section>
+      </Block>
 
-      {/* Bank Research */}
-      <Section title="Bank Research">
+      {/* ── Bank Research ── */}
+      <Block title="Bank Research" count={BANK_RESEARCH.length}>
         <div>
           {BANK_RESEARCH.map((b, i) => {
             const dc = b.direction === 'BUY' ? '#22c55e' : b.direction === 'SELL' ? '#ef4444' : '#f0b429'
             return (
-              <div key={i} style={{
-                padding: '6px 10px', borderBottom: '1px solid rgba(255,255,255,.03)',
-                cursor: 'pointer', transition: 'background 80ms',
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,.025)'}
+              <div key={i}
+                style={{
+                  padding: '7px 10px', borderBottom: '0.5px solid var(--t-border-subtle)',
+                  cursor: 'pointer', transition: 'background 80ms',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--t-surface-hover)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                  <span style={{ fontSize: 8, fontWeight: 700, color: '#f0b429', fontFamily: 'var(--font-mono)' }}>{b.bank}</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                  <span style={{ fontSize: 8, fontWeight: 700, color: 'var(--t-accent-primary)', fontFamily: 'var(--t-font-mono)' }}>{b.bank}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 8, color: '#3d5060', fontFamily: 'var(--font-mono)' }}>{b.pair}</span>
-                    <span style={{
-                      fontSize: 7, fontWeight: 700, color: dc, padding: '1px 4px',
-                      background: `${dc}15`, border: `0.5px solid ${dc}30`, borderRadius: 2,
-                      fontFamily: 'var(--font-mono)',
-                    }}>{b.direction}</span>
+                    <span style={{ fontSize: 8, color: 'var(--t-text-disabled)', fontFamily: 'var(--t-font-mono)' }}>{b.pair}</span>
+                    <span style={{ fontSize: 7, fontWeight: 700, padding: '1px 4px', borderRadius: 2, background: `${dc}12`, color: dc, border: `0.5px solid ${dc}28`, fontFamily: 'var(--t-font-mono)' }}>{b.direction}</span>
                   </div>
                 </div>
-                <p style={{ fontSize: 8, color: '#5a7080', lineHeight: 1.5, fontFamily: 'var(--font-sans)' }}>{b.view}</p>
+                <p style={{ fontSize: 8, color: 'var(--t-text-muted)', lineHeight: 1.55, fontFamily: 'var(--t-font-sans)' }}>{b.view}</p>
               </div>
             )
           })}
         </div>
-      </Section>
+      </Block>
     </div>
   )
 }

@@ -1,17 +1,8 @@
 'use client'
+import { motion } from 'framer-motion'
 import { useTerminalStore } from '@/store/terminal'
 import { WORKSPACE_TABS } from '@/lib/data'
 import type { TabId } from '@/types'
-
-const ICONS: Record<string, string> = {
-  dashboard:   '◈',
-  cot:         '⟁',
-  calendar:    '◷',
-  newsplay:    '◎',
-  seasonality: '∿',
-  worldbook:   '◉',
-  liquidity:   '≋',
-}
 
 export function WorkspaceTabs() {
   const activeTab    = useTerminalStore(s => s.activeTab)
@@ -19,28 +10,40 @@ export function WorkspaceTabs() {
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', height: 32, flexShrink: 0,
-      background: '#050810', borderBottom: '1px solid rgba(255,255,255,.05)',
-      padding: '0 8px', gap: 2,
+      display: 'flex', alignItems: 'center', height: 34, flexShrink: 0,
+      background: 'var(--t-surface-panel)',
+      borderBottom: '0.5px solid var(--t-border-default)',
+      padding: '0 10px', gap: 2, overflowX: 'auto',
     }}>
       {WORKSPACE_TABS.map(tab => {
-        const isActive = activeTab === tab.id
+        const isActive = tab.id === activeTab
         return (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id as TabId)} style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            padding: '4px 10px', borderRadius: 4,
-            background: isActive ? 'rgba(240,180,41,.07)' : 'transparent',
-            border: `0.5px solid ${isActive ? 'rgba(240,180,41,.2)' : 'transparent'}`,
-            color: isActive ? '#f0b429' : '#2d3f50',
-            fontSize: 9, fontWeight: isActive ? 600 : 400,
-            fontFamily: 'var(--font-mono)', letterSpacing: '0.5px',
-            cursor: 'pointer', transition: 'all 120ms', whiteSpace: 'nowrap',
-          }}
-            onMouseEnter={e => { if (!isActive) { e.currentTarget.style.color='#6a7d8f'; e.currentTarget.style.background='rgba(255,255,255,.025)' } }}
-            onMouseLeave={e => { if (!isActive) { e.currentTarget.style.color='#2d3f50'; e.currentTarget.style.background='transparent' } }}
+          <button key={tab.id} onClick={() => setActiveTab(tab.id as TabId)}
+            style={{
+              position: 'relative', display: 'flex', alignItems: 'center', gap: 5,
+              padding: '4px 11px', borderRadius: 5, flexShrink: 0,
+              background:   isActive ? 'var(--t-surface-hover)' : 'transparent',
+              border:       isActive ? '0.5px solid var(--t-border-default)' : '0.5px solid transparent',
+              color:        isActive ? 'var(--t-text-heading)'  : 'var(--t-text-muted)',
+              fontSize:     11, fontWeight: isActive ? 600 : 400,
+              fontFamily:   'var(--t-font-sans)', cursor: 'pointer',
+              transition:   'all 100ms', whiteSpace: 'nowrap',
+              letterSpacing: '-0.1px',
+            }}
+            onMouseEnter={e => { if (!isActive) { e.currentTarget.style.color = 'var(--t-text-secondary)'; e.currentTarget.style.background = 'var(--t-surface-hover)'; } }}
+            onMouseLeave={e => { if (!isActive) { e.currentTarget.style.color = 'var(--t-text-muted)';     e.currentTarget.style.background = 'transparent'; } }}
           >
-            <span style={{ fontSize: 10, opacity: 0.7 }}>{ICONS[tab.id] || '○'}</span>
             {tab.label}
+            {isActive && (
+              <motion.div
+                layoutId="tab-bar"
+                style={{
+                  position: 'absolute', bottom: -1, left: 8, right: 8,
+                  height: 1.5, background: 'var(--t-accent-primary)', borderRadius: 1,
+                }}
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+              />
+            )}
           </button>
         )
       })}
