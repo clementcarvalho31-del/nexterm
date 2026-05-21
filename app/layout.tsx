@@ -3,13 +3,13 @@ import './globals.css'
 import { ThemeProvider } from '@/src/design-system/themes/ThemeProvider'
 
 export const metadata: Metadata = {
-  title: 'PrimeMarket — Institutional Trading Platform',
-  description: 'Professional Forex & Macro Trading Terminal — Institutional grade analysis',
+  title: 'NEXTERM — Institutional FX Terminal',
+  description: 'Professional Forex & Macro Trading Terminal',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className="h-screen">
         <ThemeProvider>
           {children}

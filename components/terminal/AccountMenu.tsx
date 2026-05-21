@@ -1,5 +1,8 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { loadBillingUser } from '@/lib/billing/client-storage'
+import { trialDaysLeft } from '@/lib/billing/session-payload'
+import { billingService } from '@/src/features/billing/services/BillingService'
 
 type Lang = 'fr' | 'en'
 
@@ -32,16 +35,57 @@ interface AccountMenuProps {
 export function AccountMenu({ lang, onLangChange }: AccountMenuProps) {
   const [open, setOpen] = useState(false)
   const [section, setSection] = useState<'main'|'profile'|'subscription'|'language'>('main')
+  const [billingBusy, setBillingBusy] = useState(false)
+  const [billingError, setBillingError] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const t = T[lang]
 
-  const user = {
-    name: 'Clément Carvalho',
-    email: 'clement.carvalho31@gmail.com',
-    id: 'NXT-00142',
-    plan: 'trial' as 'trial'|'free'|'pro'|'premium',
-    trialDays: 2,
-    avatar: 'C',
+  const billing = useMemo(() => loadBillingUser(), [open])
+
+  const user = useMemo(() => {
+    const name = billing?.name ?? billing?.email?.split('@')[0] ?? 'Trader'
+    const plan = billing?.plan ?? 'free'
+    return {
+      name,
+      email: billing?.email ?? '—',
+      id: billing?.userId ?? '—',
+      plan: plan as 'trial'|'free'|'pro'|'premium'|'team',
+      trialDays: trialDaysLeft(billing?.trialEndsAt) || (plan === 'trial' ? 3 : 0),
+      avatar: name.charAt(0).toUpperCase(),
+      stripeCustomerId: billing?.stripeCustomerId,
+      status: billing?.status,
+    }
+  }, [billing])
+
+  const startCheckout = async (plan: 'pro' | 'team' = 'pro') => {
+    if (!billing?.email || billing.email === '—') {
+      setBillingError(lang === 'fr' ? 'Inscris-toi d’abord via /signup' : 'Sign up first at /signup')
+      return
+    }
+    setBillingBusy(true)
+    setBillingError(null)
+    const { url, error } = await billingService.createCheckout({
+      email: billing.email,
+      name: billing.name,
+      userId: billing.userId,
+      plan,
+    })
+    setBillingBusy(false)
+    if (error || !url) { setBillingError(error ?? 'Checkout failed'); return }
+    window.location.href = url
+  }
+
+  const openPortal = async () => {
+    if (!billing?.email) return
+    setBillingBusy(true)
+    setBillingError(null)
+    const { url, error } = await billingService.openCustomerPortal(
+      billing.email,
+      billing.stripeCustomerId,
+    )
+    setBillingBusy(false)
+    if (error || !url) { setBillingError(error ?? 'Portal failed'); return }
+    window.location.href = url
   }
 
   useEffect(() => {
@@ -54,8 +98,9 @@ export function AccountMenu({ lang, onLangChange }: AccountMenuProps) {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const planColor = user.plan === 'trial' ? '#f0b429' : user.plan === 'pro' ? '#22c55e' : user.plan === 'premium' ? '#a78bfa' : '#64748b'
-  const planLabel = user.plan === 'trial' ? t.trialBadge : user.plan === 'pro' ? t.pro : user.plan === 'premium' ? t.premium : t.free
+  const planColor = user.plan === 'trial' ? '#f0b429' : user.plan === 'pro' || user.plan === 'team' ? '#22c55e' : user.plan === 'premium' ? '#a78bfa' : '#64748b'
+  const planLabel = user.plan === 'trial' ? t.trialBadge : user.plan === 'pro' ? t.pro : user.plan === 'team' ? 'Team' : user.plan === 'premium' ? t.premium : t.free
+  const statusLabel = user.status === 'TRIALING' ? t.trialBadge : user.status === 'ACTIVE' ? t.active : (user.status ?? '—')
 
   return (
     <div ref={ref} style={{ position:'relative' }}>
@@ -126,12 +171,15 @@ export function AccountMenu({ lang, onLangChange }: AccountMenuProps) {
               </div>
 
               {/* Upgrade CTA */}
-              {user.plan !== 'premium' && (
+              {(user.plan === 'free' || user.plan === 'trial') && (
                 <div style={{ padding:'0 12px 12px' }}>
-                  <button style={{ width:'100%', padding:'9px 14px', borderRadius:7, background:'linear-gradient(135deg,#f0b429,#d4780a)', border:'none', color:'#000', fontSize:12, fontWeight:700, cursor:'pointer', transition:'opacity 150ms' }}
-                    onMouseEnter={e=>e.currentTarget.style.opacity='0.9'}
-                    onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
-                    ⚡ {t.upgrade}
+                  <button
+                    type="button"
+                    disabled={billingBusy}
+                    onClick={() => startCheckout('pro')}
+                    style={{ width:'100%', padding:'9px 14px', borderRadius:7, background:'linear-gradient(135deg,#f0b429,#d4780a)', border:'none', color:'#000', fontSize:12, fontWeight:700, cursor: billingBusy ? 'wait' : 'pointer', opacity: billingBusy ? 0.7 : 1 }}
+                  >
+                    ⚡ {billingBusy ? '…' : t.upgrade}
                   </button>
                 </div>
               )}
@@ -184,7 +232,7 @@ export function AccountMenu({ lang, onLangChange }: AccountMenuProps) {
                     <span style={{ fontSize:10, fontWeight:700, color:planColor, padding:'1px 6px', borderRadius:3, background:planColor+'22' }}>{planLabel}</span>
                   </div>
                   <div style={{ fontSize:16, fontWeight:700, color:'#f0f4f8' }}>{planLabel}</div>
-                  <div style={{ fontSize:11, color:'#5a7080', marginTop:2 }}>{t.status}: <span style={{ color:'#22c55e' }}>{t.active}</span></div>
+                  <div style={{ fontSize:11, color:'#5a7080', marginTop:2 }}>{t.status}: <span style={{ color:'#22c55e' }}>{statusLabel}</span></div>
                   {user.plan === 'trial' && (
                     <div style={{ marginTop:8, fontSize:11, color:'#f0b429' }}>⏳ {user.trialDays} {t.daysLeft}</div>
                   )}
@@ -206,9 +254,31 @@ export function AccountMenu({ lang, onLangChange }: AccountMenuProps) {
                   ))}
                 </div>
 
-                <button style={{ width:'100%', marginTop:12, padding:'9px 14px', borderRadius:7, background:'linear-gradient(135deg,#f0b429,#d4780a)', border:'none', color:'#000', fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                  ⚡ {t.upgrade}
-                </button>
+                <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:12 }}>
+                  {(user.plan === 'free' || user.plan === 'trial') && (
+                    <button
+                      type="button"
+                      disabled={billingBusy}
+                      onClick={() => startCheckout('pro')}
+                      style={{ width:'100%', padding:'9px 14px', borderRadius:7, background:'linear-gradient(135deg,#f0b429,#d4780a)', border:'none', color:'#000', fontSize:12, fontWeight:700, cursor: billingBusy ? 'wait' : 'pointer' }}
+                    >
+                      ⚡ {billingBusy ? '…' : t.upgrade}
+                    </button>
+                  )}
+                  {billing?.stripeCustomerId && (
+                    <button
+                      type="button"
+                      disabled={billingBusy}
+                      onClick={openPortal}
+                      style={{ width:'100%', padding:'9px 14px', borderRadius:7, background:'transparent', border:'0.5px solid rgba(255,255,255,.15)', color:'#c8d6e5', fontSize:12, fontWeight:600, cursor: billingBusy ? 'wait' : 'pointer' }}
+                    >
+                      {lang === 'fr' ? 'Gérer l’abonnement' : 'Manage subscription'}
+                    </button>
+                  )}
+                  {billingError && (
+                    <p style={{ fontSize: 10, color: '#ef4444', margin: 0 }}>{billingError}</p>
+                  )}
+                </div>
               </div>
             </>
           )}

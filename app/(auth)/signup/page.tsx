@@ -1,24 +1,49 @@
 'use client'
-import { useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+import { billingService } from '@/src/features/billing/services/BillingService'
+import { stashSignupDraft } from '@/lib/billing/client-storage'
 
 const STEPS = ['Account', 'Profile', 'Plan']
 
-export default function SignupPage() {
-  const router = useRouter()
+function SignupForm() {
+  const searchParams = useSearchParams()
+  const needsSubscription = searchParams.get('reason') === 'subscription'
   const [step, setStep] = useState(0)
-  const [form, setForm] = useState({ email:'', password:'', name:'', plan:'pro' })
+  const [form, setForm] = useState({ email:'', password:'', name:'', plan:'pro' as 'pro'|'team' })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const email = searchParams.get('email')
+    if (email) setForm(f => ({ ...f, email }))
+  }, [searchParams])
 
   const upd = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
-  const next = (e: React.FormEvent) => {
+  const next = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (step < 2) { setStep(s=>s+1); return }
+    setError(null)
+    if (step < 2) { setStep(s => s + 1); return }
+
     setLoading(true)
-    setTimeout(() => { router.push('/terminal') }, 1800)
+    stashSignupDraft({ email: form.email, name: form.name, plan: form.plan })
+
+    const { url, error: checkoutError } = await billingService.createCheckout({
+      email: form.email,
+      name: form.name,
+      plan: form.plan,
+    })
+
+    if (checkoutError || !url) {
+      setError(checkoutError ?? 'Stripe non configuré. Ajoute STRIPE_SECRET_KEY et STRIPE_PRICE_ID sur Vercel.')
+      setLoading(false)
+      return
+    }
+
+    window.location.href = url
   }
 
   const inputStyle: React.CSSProperties = {
@@ -34,7 +59,7 @@ export default function SignupPage() {
       <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between', padding:'40px 48px', background:'rgba(240,180,41,.03)', borderRight:'0.5px solid rgba(255,255,255,.06)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:9 }}>
           <div style={{ width:28, height:28, background:'linear-gradient(135deg,#f0b429,#d4780a)', borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#000' }}>N</div>
-          <span style={{ fontWeight:700, fontSize:15, color:'#f0f4f8', letterSpacing:'-0.3px' }}>Nexterm</span>
+          <span style={{ fontWeight:700, fontSize:15, color:'#f0f4f8', letterSpacing:'-0.3px' }}>PrimeMarket</span>
         </div>
 
         <div>
@@ -79,11 +104,19 @@ export default function SignupPage() {
             ))}
           </div>
 
+          {needsSubscription && (
+            <div style={{ padding:'10px 12px', borderRadius:8, marginBottom:16, background:'rgba(240,180,41,.08)', border:'0.5px solid rgba(240,180,41,.25)' }}>
+              <p style={{ fontSize:12, color:'#f0b429', margin:0, lineHeight:1.5 }}>
+                Le terminal nécessite un essai ou un abonnement. Étape finale : paiement sécurisé via Stripe.
+              </p>
+            </div>
+          )}
+
           <h1 style={{ fontSize:22, fontWeight:800, letterSpacing:'-0.6px', color:'#f0f4f8', marginBottom:6 }}>
             {step===0?'Create your account':step===1?'Tell us about you':'Choose your plan'}
           </h1>
           <p style={{ fontSize:13, color:'#3d5060', marginBottom:24 }}>
-            {step===0?'Start your 3-day free trial':step===1?'Personalize your experience':'All plans include a 3-day trial'}
+            {step===0?'Start your 3-day free trial':step===1?'Personalize your experience':'Paiement via Stripe (essai 3 jours)'}
           </p>
 
           <form onSubmit={next} style={{ display:'flex', flexDirection:'column', gap:14 }}>
@@ -118,7 +151,7 @@ export default function SignupPage() {
                 { id:'team', name:'Team', price:'$149/mo', desc:'Up to 5 seats, shared workspaces, admin dashboard', popular:false },
               ].map(p=>(
                 <label key={p.id} style={{ display:'block', padding:14, borderRadius:8, border:`0.5px solid ${form.plan===p.id?'rgba(240,180,41,.4)':'rgba(255,255,255,.1)'}`, background:form.plan===p.id?'rgba(240,180,41,.06)':'transparent', cursor:'pointer', transition:'all 120ms' }}>
-                  <input type="radio" name="plan" value={p.id} checked={form.plan===p.id} onChange={upd('plan')} style={{ display:'none' }}/>
+                  <input type="radio" name="plan" value={p.id} checked={form.plan===p.id} onChange={() => setForm(f => ({ ...f, plan: p.id as 'pro'|'team' }))} style={{ display:'none' }}/>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                       <span style={{ fontSize:14, fontWeight:700, color:'#f0f4f8' }}>{p.name}</span>
@@ -132,12 +165,16 @@ export default function SignupPage() {
               {/* Trial reminder */}
               <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 12px', borderRadius:8, background:'rgba(34,197,94,.05)', border:'0.5px solid rgba(34,197,94,.15)' }}>
                 <span style={{ fontSize:16 }}>🎁</span>
-                <p style={{ fontSize:12, color:'#5a9070', margin:0 }}>Your <strong style={{ color:'#22c55e' }}>3-day free trial</strong> starts immediately — no credit card required.</p>
+                <p style={{ fontSize:12, color:'#5a9070', margin:0 }}>Essai <strong style={{ color:'#22c55e' }}>3 jours</strong> via Stripe — carte optionnelle.</p>
               </div>
             </>}
 
+            {error && (
+              <p style={{ fontSize: 12, color: '#ef4444', margin: 0, lineHeight: 1.5 }}>{error}</p>
+            )}
+
             <button type="submit" disabled={loading} style={{ padding:'12px 20px', borderRadius:8, background:loading?'rgba(240,180,41,.6)':'linear-gradient(135deg,#f0b429,#d4780a)', border:'none', color:'#000', fontSize:14, fontWeight:700, cursor:loading?'wait':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 2px 12px rgba(240,180,41,.25)', marginTop:4 }}>
-              {loading?<><span style={{ width:14, height:14, borderRadius:'50%', border:'2px solid rgba(0,0,0,.3)', borderTopColor:'#000', animation:'t-spin .7s linear infinite', display:'inline-block' }}/> Setting up…</>:step<2?'Continue →':'Start free trial →'}
+              {loading?<><span style={{ width:14, height:14, borderRadius:'50%', border:'2px solid rgba(0,0,0,.3)', borderTopColor:'#000', animation:'t-spin .7s linear infinite', display:'inline-block' }}/> Redirection Stripe…</>:step<2?'Continue →':'Continuer vers Stripe →'}
             </button>
           </form>
 
@@ -148,5 +185,13 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
   )
 }

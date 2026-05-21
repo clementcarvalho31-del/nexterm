@@ -39,7 +39,7 @@ export default function LandingPage() {
       <nav style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 32px', height:60, borderBottom:'0.5px solid rgba(255,255,255,.06)', position:'sticky', top:0, zIndex:50, background:'rgba(8,11,16,.9)', backdropFilter:'blur(20px)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div style={{ width:28, height:28, background:'linear-gradient(135deg,#f0b429,#d4780a)', borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#000' }}>N</div>
-          <span style={{ fontWeight:700, fontSize:16, letterSpacing:'-0.4px', color:'#f0f4f8' }}>Nexterm</span>
+          <span style={{ fontWeight:700, fontSize:16, letterSpacing:'-0.4px', color:'#f0f4f8' }}>PrimeMarket</span>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:24 }}>
           {['Features','Pricing','Docs'].map(l=>(
@@ -160,7 +160,7 @@ export default function LandingPage() {
       <footer style={{ padding:'40px 32px', borderTop:'0.5px solid rgba(255,255,255,.06)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <div style={{ width:22, height:22, background:'linear-gradient(135deg,#f0b429,#d4780a)', borderRadius:5, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#000' }}>N</div>
-          <span style={{ fontSize:13, color:'#4a5e72' }}>© 2025 Nexterm. All rights reserved.</span>
+          <span style={{ fontSize:13, color:'#4a5e72' }}>© 2025 PrimeMarket. All rights reserved.</span>
         </div>
         <div style={{ display:'flex', gap:20 }}>
           {['Privacy','Terms','Contact'].map(l=>(
