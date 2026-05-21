@@ -1,9 +1,9 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { TerminalLayout }  from '@/layouts/TerminalLayout'
+import { TerminalLayout }   from '@/layouts/TerminalLayout'
 import { useTerminalStore } from '@/store/terminal'
-import { AccountMenu }     from '@/components/terminal/AccountMenu'
-import type { TabId }      from '@/src/types'
+import { AccountMenu }      from '@/components/terminal/AccountMenu'
+import type { TabId }       from '@/src/types'
 
 type Lang = 'fr' | 'en'
 
@@ -29,14 +29,13 @@ function LiveTicker() {
   )
 }
 
-function useInView(threshold = 0.15) {
+function useInView(threshold = 0.1) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     const el = ref.current; if (!el) return
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true) }, { threshold })
-    obs.observe(el)
-    return () => obs.disconnect()
+    obs.observe(el); return () => obs.disconnect()
   }, [threshold])
   return { ref, visible }
 }
@@ -44,17 +43,15 @@ function useInView(threshold = 0.15) {
 function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const { ref, visible } = useInView()
   return (
-    <div ref={ref} style={{
-      opacity: visible ? 1 : 0,
-      transform: visible ? 'translateY(0)' : 'translateY(28px)',
-      transition: `opacity 0.65s cubic-bezier(.22,1,.36,1) ${delay}s, transform 0.65s cubic-bezier(.22,1,.36,1) ${delay}s`,
-    }}>{children}</div>
+    <div ref={ref} style={{ opacity: visible?1:0, transform: visible?'translateY(0)':'translateY(28px)', transition:`opacity 0.65s cubic-bezier(.22,1,.36,1) ${delay}s, transform 0.65s cubic-bezier(.22,1,.36,1) ${delay}s` }}>
+      {children}
+    </div>
   )
 }
 
 function ModuleCard({ m, delay, onEnter, lang }: { m:any; delay:number; onEnter:(t:TabId)=>void; lang:Lang }) {
   const [hov, setHov] = useState(false)
-  const { ref, visible } = useInView(0.1)
+  const { ref, visible } = useInView(0.05)
   return (
     <div ref={ref} onClick={() => onEnter(m.id)}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
@@ -95,46 +92,48 @@ function ModuleCard({ m, delay, onEnter, lang }: { m:any; delay:number; onEnter:
 
 function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>void; lang:Lang; onLangChange:(l:Lang)=>void }) {
   const MODULES_FR = [
-    { id:'calendar'    as TabId, icon:'📅', title:'Calendrier & News Macro',   subtitle:'Live macro events + news feed',              desc:'CPI · NFP · FOMC · ECB · GDP · PMI · Actualités macro en temps réel',           detail:'Countdown live, impact ★★★, scénarios bull/bear, news institutionnelles',          color:'#ef4444', glow:'rgba(239,68,68,.2)',    border:'rgba(239,68,68,.25)',    bg:'rgba(239,68,68,.05)',    stats:[{label:'This week',value:'12 events'},{label:'HIGH impact',value:'6'},{label:'Next',value:'NFP Fri'}] },
-    { id:'yields'      as TabId, icon:'📊', title:'Taux Futurs',               subtitle:'Prévisions de taux Fed · BCE · BOJ',         desc:'Futures de taux · Courbe forward · OIS · Probabilités de hike/cut',            detail:'Pricing du marché sur les prochaines réunions, courbe des taux implicites',       color:'#3b82f6', glow:'rgba(59,130,246,.2)', border:'rgba(59,130,246,.25)', bg:'rgba(59,130,246,.05)', stats:[{label:'FED Jun',value:'Hold 92%'},{label:'BCE Jul',value:'-25bp 68%'},{label:'BOJ',value:'Hold 81%'}] },
-    { id:'cot'         as TabId, icon:'🌐', title:'Saisonnalité & Sentiment',  subtitle:'Retail positioning + patterns saisonniers',  desc:'Saisonnalité historique · Sentiment retail · COT · Biais directionnel',         detail:'Patterns 5/10/20 ans, positionnement retail vs institutionnel, biais mensuel',   color:'#a78bfa', glow:'rgba(167,139,250,.2)',border:'rgba(167,139,250,.25)',bg:'rgba(167,139,250,.05)',stats:[{label:'EUR/USD',value:'+63% haussier'},{label:'Retail',value:'66% long'},{label:'Saison',value:'Mai bearish'}] },
-    { id:'trackrecord' as TabId, icon:'📈', title:'Track Record',              subtitle:'Performance vérifiée · Hedge Fund grade',    desc:'Equity curve · Drawdown · Sharpe · Win rate · 50 trades audités',              detail:'Dashboard institutionnel complet avec base de données de trades, KPIs et graphiques', color:'#f0b429', glow:'rgba(240,180,41,.2)',border:'rgba(240,180,41,.25)',bg:'rgba(240,180,41,.05)',stats:[{label:'Total Return',value:'+47.2%'},{label:'Win Rate',value:'72%'},{label:'Sharpe',value:'2.84'}] },
-    { id:'livefeed'    as TabId, icon:'⚡', title:'Live Feed',                 subtitle:'InvestingLive · Macro news en temps réel',   desc:'Actualités live · Central banks · Forex · Commodities · Crypto · Session wrap', detail:'Même flux que InvestingLive, refresh 30s, filtres par catégorie, alertes importantes', color:'#06b6d4', glow:'rgba(6,182,212,.2)',  border:'rgba(6,182,212,.25)',  bg:'rgba(6,182,212,.05)',  stats:[{label:'Sources',value:'3 live'},{label:'Refresh',value:'30s'},{label:'Catégories',value:'8'}] },
+    { id:'calendar'    as TabId, icon:'📅', title:'Calendrier & News Macro',   subtitle:'Live macro events + news feed',              desc:'CPI · NFP · FOMC · ECB · GDP · PMI · Actualités macro en temps réel',            detail:'Countdown live, impact ★★★, scénarios bull/bear, date picker style ForexFactory',  color:'#ef4444', glow:'rgba(239,68,68,.2)',    border:'rgba(239,68,68,.25)',    bg:'rgba(239,68,68,.05)',    stats:[{label:'This week',value:'12 events'},{label:'HIGH impact',value:'6'},{label:'Next',value:'NFP Fri'}] },
+    { id:'yields'      as TabId, icon:'📊', title:'Taux Futurs',               subtitle:'Prévisions de taux Fed · BCE · BOJ',         desc:'Futures de taux · Courbe forward · OIS · Probabilités de hike/cut',             detail:'Pricing du marché sur les prochaines réunions, courbe des taux implicites',        color:'#3b82f6', glow:'rgba(59,130,246,.2)', border:'rgba(59,130,246,.25)', bg:'rgba(59,130,246,.05)', stats:[{label:'FED Jun',value:'Hold 92%'},{label:'BCE Jul',value:'-25bp 68%'},{label:'BOJ',value:'Hold 81%'}] },
+    { id:'cot'         as TabId, icon:'🌐', title:'Saisonnalité & Sentiment',  subtitle:'Retail positioning + patterns saisonniers',  desc:'Saisonnalité historique · Sentiment retail · COT · Biais directionnel',          detail:'Patterns 5/10/20 ans, positionnement retail vs institutionnel, biais mensuel',    color:'#a78bfa', glow:'rgba(167,139,250,.2)',border:'rgba(167,139,250,.25)',bg:'rgba(167,139,250,.05)',stats:[{label:'EUR/USD',value:'+63% haussier'},{label:'Retail',value:'66% long'},{label:'Saison',value:'Mai bearish'}] },
+    { id:'trackrecord' as TabId, icon:'📈', title:'Track Record',              subtitle:'Performance vérifiée · Hedge Fund grade',    desc:'Equity curve · Drawdown · Sharpe · Win rate · 50 trades audités',               detail:'Dashboard institutionnel complet avec base de données de trades, KPIs et graphiques', color:'#f0b429', glow:'rgba(240,180,41,.2)',border:'rgba(240,180,41,.25)',bg:'rgba(240,180,41,.05)',stats:[{label:'Total Return',value:'+47.2%'},{label:'Win Rate',value:'72%'},{label:'Sharpe',value:'2.84'}] },
+    { id:'livefeed'    as TabId, icon:'⚡', title:'Live Feed',                 subtitle:'InvestingLive · Macro news en temps réel',   desc:'Actualités live · Central banks · Forex · Commodities · Crypto · Session wrap',  detail:'Même flux que InvestingLive, refresh 30s, filtres par catégorie, alertes importantes', color:'#06b6d4', glow:'rgba(6,182,212,.2)',  border:'rgba(6,182,212,.25)',  bg:'rgba(6,182,212,.05)',  stats:[{label:'Sources',value:'3 live'},{label:'Refresh',value:'30s'},{label:'Catégories',value:'8'}] },
   ]
   const MODULES_EN = [
-    { id:'calendar'    as TabId, icon:'📅', title:'Calendar & Macro News',     subtitle:'Live macro events + news feed',              desc:'CPI · NFP · FOMC · ECB · GDP · PMI · Real-time macro news',                    detail:'Live countdown, ★★★ impact, bull/bear scenarios, institutional news',             color:'#ef4444', glow:'rgba(239,68,68,.2)',    border:'rgba(239,68,68,.25)',    bg:'rgba(239,68,68,.05)',    stats:[{label:'This week',value:'12 events'},{label:'HIGH impact',value:'6'},{label:'Next',value:'NFP Fri'}] },
-    { id:'yields'      as TabId, icon:'📊', title:'Rate Futures',              subtitle:'Fed · ECB · BOJ forecasts',                  desc:'Rate futures · Forward curve · OIS · Hike/cut probabilities',                  detail:'Market pricing on upcoming meetings, implied rate curve',                        color:'#3b82f6', glow:'rgba(59,130,246,.2)', border:'rgba(59,130,246,.25)', bg:'rgba(59,130,246,.05)', stats:[{label:'FED Jun',value:'Hold 92%'},{label:'ECB Jul',value:'-25bp 68%'},{label:'BOJ',value:'Hold 81%'}] },
-    { id:'cot'         as TabId, icon:'🌐', title:'Seasonality & Sentiment',   subtitle:'Retail positioning + seasonal patterns',     desc:'Historical seasonality · Retail sentiment · COT · Directional bias',            detail:'5/10/20yr patterns, retail vs institutional positioning, monthly bias',           color:'#a78bfa', glow:'rgba(167,139,250,.2)',border:'rgba(167,139,250,.25)',bg:'rgba(167,139,250,.05)',stats:[{label:'EUR/USD',value:'+63% bullish'},{label:'Retail',value:'66% long'},{label:'Season',value:'May bearish'}] },
-    { id:'trackrecord' as TabId, icon:'📈', title:'Track Record',              subtitle:'Verified performance · Hedge Fund grade',    desc:'Equity curve · Drawdown · Sharpe · Win rate · 50 audited trades',              detail:'Complete institutional dashboard with trade database, KPIs and charts',           color:'#f0b429', glow:'rgba(240,180,41,.2)',border:'rgba(240,180,41,.25)',bg:'rgba(240,180,41,.05)',stats:[{label:'Total Return',value:'+47.2%'},{label:'Win Rate',value:'72%'},{label:'Sharpe',value:'2.84'}] },
-    { id:'livefeed'    as TabId, icon:'⚡', title:'Live Feed',                 subtitle:'InvestingLive · Real-time macro news',       desc:'Live news · Central banks · Forex · Commodities · Crypto · Session wrap',      detail:'Same feed as InvestingLive, 30s refresh, category filters, breaking alerts',    color:'#06b6d4', glow:'rgba(6,182,212,.2)',  border:'rgba(6,182,212,.25)',  bg:'rgba(6,182,212,.05)',  stats:[{label:'Sources',value:'3 live'},{label:'Refresh',value:'30s'},{label:'Categories',value:'8'}] },
+    { id:'calendar'    as TabId, icon:'📅', title:'Calendar & Macro News',     subtitle:'Live macro events + news feed',              desc:'CPI · NFP · FOMC · ECB · GDP · PMI · Real-time macro news',                     detail:'Live countdown, ★★★ impact, bull/bear scenarios, ForexFactory-style date picker',  color:'#ef4444', glow:'rgba(239,68,68,.2)',    border:'rgba(239,68,68,.25)',    bg:'rgba(239,68,68,.05)',    stats:[{label:'This week',value:'12 events'},{label:'HIGH impact',value:'6'},{label:'Next',value:'NFP Fri'}] },
+    { id:'yields'      as TabId, icon:'📊', title:'Rate Futures',              subtitle:'Fed · ECB · BOJ forecasts',                  desc:'Rate futures · Forward curve · OIS · Hike/cut probabilities',                   detail:'Market pricing on upcoming meetings, implied rate curve',                         color:'#3b82f6', glow:'rgba(59,130,246,.2)', border:'rgba(59,130,246,.25)', bg:'rgba(59,130,246,.05)', stats:[{label:'FED Jun',value:'Hold 92%'},{label:'ECB Jul',value:'-25bp 68%'},{label:'BOJ',value:'Hold 81%'}] },
+    { id:'cot'         as TabId, icon:'🌐', title:'Seasonality & Sentiment',   subtitle:'Retail positioning + seasonal patterns',     desc:'Historical seasonality · Retail sentiment · COT · Directional bias',             detail:'5/10/20yr patterns, retail vs institutional positioning, monthly bias',            color:'#a78bfa', glow:'rgba(167,139,250,.2)',border:'rgba(167,139,250,.25)',bg:'rgba(167,139,250,.05)',stats:[{label:'EUR/USD',value:'+63% bullish'},{label:'Retail',value:'66% long'},{label:'Season',value:'May bearish'}] },
+    { id:'trackrecord' as TabId, icon:'📈', title:'Track Record',              subtitle:'Verified performance · Hedge Fund grade',    desc:'Equity curve · Drawdown · Sharpe · Win rate · 50 audited trades',                detail:'Complete institutional dashboard with trade database, KPIs and charts',            color:'#f0b429', glow:'rgba(240,180,41,.2)',border:'rgba(240,180,41,.25)',bg:'rgba(240,180,41,.05)',stats:[{label:'Total Return',value:'+47.2%'},{label:'Win Rate',value:'72%'},{label:'Sharpe',value:'2.84'}] },
+    { id:'livefeed'    as TabId, icon:'⚡', title:'Live Feed',                 subtitle:'InvestingLive · Real-time macro news',       desc:'Live news · Central banks · Forex · Commodities · Crypto · Session wrap',       detail:'Same feed as InvestingLive, 30s refresh, category filters, breaking alerts',     color:'#06b6d4', glow:'rgba(6,182,212,.2)',  border:'rgba(6,182,212,.25)',  bg:'rgba(6,182,212,.05)',  stats:[{label:'Sources',value:'3 live'},{label:'Refresh',value:'30s'},{label:'Categories',value:'8'}] },
   ]
 
   const modules = lang === 'fr' ? MODULES_FR : MODULES_EN
-  const SECONDARY: {tab:TabId; fr:string; en:string}[] = [
-    { tab:'newsplay',    fr:'Event Trades', en:'Event Trades' },
-    { tab:'worldbook',   fr:'Worldbook',    en:'Worldbook' },
-    { tab:'dashboard',   fr:'Marchés',      en:'Markets' },
-    { tab:'flows',       fr:'Flux',         en:'Flows' },
-    { tab:'copilot',     fr:'AI Copilot',   en:'AI Copilot' },
-    { tab:'seasonality', fr:'Saisonnalité', en:'Seasonality' },
-  ]
+
   const FEATURES_FR = [
-    { icon:'⚡', title:'Données live 30s',       desc:'Refresh automatique sur tous les modules. Sentiment, news, calendrier — toujours à jour.' },
-    { icon:'🧠', title:'Signaux contrarians',     desc:'Détection automatique des crowds extrêmes. Signal contrarian généré en temps réel.' },
-    { icon:'📊', title:'Saisonnalité 20 ans',     desc:'Patterns historiques sur 5/10/15/20 ans. Heatmap, trend line, statistiques avancées.' },
-    { icon:'📰', title:'Feed institutionnel',     desc:'InvestingLive + FinancialJuice + Reuters. Catégorisé, filtrable, en temps réel.' },
-    { icon:'🎯', title:'Event Trades',            desc:'Scénarios bull/bear/base sur chaque événement macro. Niveaux, levels, probabilités.' },
-    { icon:'🔒', title:'Grade institutionnel',    desc:'Bloomberg-quality. COT data, OIS pricing, sentiment retail — tout en un seul terminal.' },
+    { icon:'⚡', title:'Données live 30s',    desc:'Refresh automatique sur tous les modules. Sentiment, news, calendrier — toujours à jour.' },
+    { icon:'🧠', title:'Signaux contrarians', desc:'Détection automatique des crowds extrêmes. Signal contrarian généré en temps réel.' },
+    { icon:'📊', title:'Saisonnalité 20 ans', desc:'Patterns historiques sur 5/10/15/20 ans. Heatmap, trend line, statistiques avancées.' },
+    { icon:'📰', title:'Feed institutionnel', desc:'InvestingLive + FinancialJuice + Reuters. Catégorisé, filtrable, en temps réel.' },
+    { icon:'🎯', title:'Event Trades',        desc:'Scénarios bull/bear/base sur chaque événement macro. Niveaux, levels, probabilités.' },
+    { icon:'🔒', title:'Grade institutionnel',desc:'Bloomberg-quality. COT data, OIS pricing, sentiment retail — tout en un seul terminal.' },
   ]
   const FEATURES_EN = [
-    { icon:'⚡', title:'30s live data',          desc:'Auto-refresh across all modules. Sentiment, news, calendar — always current.' },
-    { icon:'🧠', title:'Contrarian signals',      desc:'Automatic extreme crowd detection. Contrarian signal generated in real time.' },
-    { icon:'📊', title:'20yr seasonality',        desc:'Historical patterns over 5/10/15/20 years. Heatmap, trend line, advanced stats.' },
-    { icon:'📰', title:'Institutional feed',      desc:'InvestingLive + FinancialJuice + Reuters. Categorized, filterable, real-time.' },
-    { icon:'🎯', title:'Event Trades',            desc:'Bull/bear/base scenarios for each macro event. Levels, targets, probabilities.' },
-    { icon:'🔒', title:'Institutional grade',     desc:'Bloomberg-quality. COT data, OIS pricing, retail sentiment — one terminal.' },
+    { icon:'⚡', title:'30s live data',        desc:'Auto-refresh across all modules. Sentiment, news, calendar — always current.' },
+    { icon:'🧠', title:'Contrarian signals',   desc:'Automatic extreme crowd detection. Contrarian signal generated in real time.' },
+    { icon:'📊', title:'20yr seasonality',     desc:'Historical patterns over 5/10/15/20 years. Heatmap, trend line, advanced stats.' },
+    { icon:'📰', title:'Institutional feed',   desc:'InvestingLive + FinancialJuice + Reuters. Categorized, filterable, real-time.' },
+    { icon:'🎯', title:'Event Trades',         desc:'Bull/bear/base scenarios for each macro event. Levels, targets, probabilities.' },
+    { icon:'🔒', title:'Institutional grade',  desc:'Bloomberg-quality. COT data, OIS pricing, retail sentiment — one terminal.' },
   ]
   const features = lang === 'fr' ? FEATURES_FR : FEATURES_EN
+
+  const SECONDARY: {tab:TabId; fr:string; en:string}[] = [
+    { tab:'newsplay',    fr:'Event Trades',  en:'Event Trades' },
+    { tab:'worldbook',   fr:'Worldbook',     en:'Worldbook' },
+    { tab:'dashboard',   fr:'Marchés',       en:'Markets' },
+    { tab:'flows',       fr:'Flux',          en:'Flows' },
+    { tab:'copilot',     fr:'AI Copilot',    en:'AI Copilot' },
+    { tab:'seasonality', fr:'Saisonnalité',  en:'Seasonality' },
+  ]
 
   const [heroVisible, setHeroVisible] = useState(false)
   useEffect(() => { const id = setTimeout(() => setHeroVisible(true), 80); return () => clearTimeout(id) }, [])
@@ -148,9 +147,13 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
       <div style={{ position:'fixed', inset:0, background:'radial-gradient(ellipse at 50% 0%, rgba(240,180,41,.04) 0%, transparent 65%)', pointerEvents:'none', zIndex:0 }}/>
 
       {/* Header */}
-      <header style={{ position:'sticky', top:0, zIndex:50, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 32px', height:60, borderBottom:'0.5px solid rgba(255,255,255,.07)', backdropFilter:'blur(24px)', background:'rgba(8,11,16,.82)' }}>
+      <header style={{ position:'sticky', top:0, zIndex:50, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 32px', height:60, borderBottom:'0.5px solid rgba(255,255,255,.07)', backdropFilter:'blur(24px)', background:'rgba(8,11,16,.85)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <img src="/logo.png" alt="PrimeMarket" style={{ height:36, width:'auto' }} />
+          <img src="/logo.png" alt="PrimeMarket" style={{ height:34, width:'auto' }} onError={e => { (e.target as HTMLImageElement).style.display='none' }}/>
+          <div style={{ display:'flex', flexDirection:'column' }}>
+            <div style={{ fontSize:15, fontWeight:800, color:'#f0f4f8', letterSpacing:'-.3px', lineHeight:1.2 }}>PrimeMarket</div>
+            <div style={{ fontSize:8, color:'#2d3f50', letterSpacing:'1px' }}>INSTITUTIONAL TRADING PLATFORM</div>
+          </div>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div style={{ display:'flex', gap:2, padding:3, borderRadius:7, background:'rgba(255,255,255,.06)', border:'0.5px solid rgba(255,255,255,.09)' }}>
@@ -167,27 +170,27 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
       <div style={{ position:'relative', zIndex:1 }}>
 
         {/* ── 1. HERO ── */}
-        <section style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'90px 24px 60px', textAlign:'center' }}>
-          <div style={{ opacity: heroVisible?1:0, transform: heroVisible?'translateY(0)':'translateY(16px)', transition:'opacity 0.7s cubic-bezier(.22,1,.36,1) 0s, transform 0.7s cubic-bezier(.22,1,.36,1) 0s' }}>
+        <section style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'90px 24px 70px', textAlign:'center' }}>
+          <div style={{ opacity:heroVisible?1:0, transform:heroVisible?'translateY(0)':'translateY(16px)', transition:'opacity 0.7s cubic-bezier(.22,1,.36,1) 0s, transform 0.7s cubic-bezier(.22,1,.36,1) 0s' }}>
             <div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'5px 14px 5px 10px', borderRadius:100, background:'rgba(240,180,41,.09)', border:'0.5px solid rgba(240,180,41,.22)', marginBottom:28 }}>
               <span style={{ width:6, height:6, borderRadius:'50%', background:'#f0b429', display:'inline-block', animation:'t-pulse 2s ease-in-out infinite' }}/>
               <span style={{ fontSize:11, color:'#f0b429', fontWeight:600, letterSpacing:'.5px' }}>INSTITUTIONAL TRADING PLATFORM</span>
             </div>
           </div>
-          <div style={{ opacity: heroVisible?1:0, transform: heroVisible?'translateY(0)':'translateY(24px)', transition:'opacity 0.75s cubic-bezier(.22,1,.36,1) 0.1s, transform 0.75s cubic-bezier(.22,1,.36,1) 0.1s', maxWidth:720, marginBottom:22 }}>
+          <div style={{ opacity:heroVisible?1:0, transform:heroVisible?'translateY(0)':'translateY(24px)', transition:'opacity 0.75s cubic-bezier(.22,1,.36,1) 0.1s, transform 0.75s cubic-bezier(.22,1,.36,1) 0.1s', maxWidth:720, marginBottom:22 }}>
             <h1 style={{ fontSize:'clamp(34px,5.5vw,60px)', fontWeight:800, letterSpacing:'-2px', color:'#f0f4f8', lineHeight:1.1, margin:0 }}>
               {lang==='fr' ? 'Analyse macro de niveau institutionnel' : 'Institutional-grade macro analysis'}
             </h1>
           </div>
-          <div style={{ opacity: heroVisible?1:0, transform: heroVisible?'translateY(0)':'translateY(20px)', transition:'opacity 0.75s cubic-bezier(.22,1,.36,1) 0.2s, transform 0.75s cubic-bezier(.22,1,.36,1) 0.2s', maxWidth:520, marginBottom:48 }}>
+          <div style={{ opacity:heroVisible?1:0, transform:heroVisible?'translateY(0)':'translateY(20px)', transition:'opacity 0.75s cubic-bezier(.22,1,.36,1) 0.2s, transform 0.75s cubic-bezier(.22,1,.36,1) 0.2s', maxWidth:520, marginBottom:48 }}>
             <p style={{ fontSize:15, color:'#5a7080', lineHeight:1.7, margin:0 }}>
               {lang==='fr' ? "Calendrier, taux futurs, saisonnalité — tout ce qu'un trader institutionnel surveille, en un seul endroit." : 'Calendar, rate futures, seasonality — everything an institutional trader monitors, in one place.'}
             </p>
           </div>
-          <div style={{ opacity: heroVisible?1:0, transform: heroVisible?'translateY(0) scale(1)':'translateY(20px) scale(.97)', transition:'opacity 0.8s cubic-bezier(.22,1,.36,1) 0.35s, transform 0.8s cubic-bezier(.22,1,.36,1) 0.35s', marginBottom:16 }}>
+          <div style={{ opacity:heroVisible?1:0, transform:heroVisible?'translateY(0) scale(1)':'translateY(20px) scale(.97)', transition:'opacity 0.8s cubic-bezier(.22,1,.36,1) 0.35s, transform 0.8s cubic-bezier(.22,1,.36,1) 0.35s', marginBottom:16 }}>
             <LiveTicker />
           </div>
-          <div style={{ opacity: heroVisible?1:0, transition:'opacity 1s ease 1.2s', marginTop:48, display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+          <div style={{ opacity:heroVisible?1:0, transition:'opacity 1s ease 1.2s', marginTop:48, display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
             <span style={{ fontSize:9, color:'#2d3f50', letterSpacing:'1.5px', textTransform:'uppercase' as const }}>Scroll pour explorer</span>
             <div style={{ width:1, height:32, background:'linear-gradient(to bottom, #3d5060, transparent)' }}/>
           </div>
@@ -195,19 +198,19 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
 
         {/* ── 2. FEATURES ── */}
         <Reveal>
-          <section style={{ padding:'60px 5vw 80px', maxWidth:1080, margin:'0 auto', borderTop:'0.5px solid rgba(255,255,255,.05)' }}>
-            <div style={{ textAlign:'center', marginBottom:48 }}>
-              <h2 style={{ fontSize:'clamp(22px,3vw,34px)', fontWeight:800, color:'#f0f4f8', letterSpacing:'-.8px', margin:0, marginBottom:12 }}>
+          <section style={{ padding:'60px 5vw 70px', maxWidth:1080, margin:'0 auto', borderTop:'0.5px solid rgba(255,255,255,.05)' }}>
+            <div style={{ textAlign:'center', marginBottom:44 }}>
+              <h2 style={{ fontSize:'clamp(22px,3vw,34px)', fontWeight:800, color:'#f0f4f8', letterSpacing:'-.8px', margin:0, marginBottom:10 }}>
                 {lang==='fr' ? 'Conçu pour les traders sérieux' : 'Built for serious traders'}
               </h2>
               <p style={{ fontSize:14, color:'#4a5e72', lineHeight:1.7, margin:'0 auto', maxWidth:480 }}>
                 {lang==='fr' ? 'Pas un dashboard générique. Un vrai terminal institutionnel.' : 'Not a generic dashboard. A real institutional terminal.'}
               </p>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14 }}>
               {features.map((f, i) => (
                 <Reveal key={f.title} delay={i * 0.07}>
-                  <div style={{ padding:'22px', borderRadius:12, background:'rgba(255,255,255,.025)', border:'0.5px solid rgba(255,255,255,.06)', transition:'all 200ms', height:'100%' }}
+                  <div style={{ padding:'22px', borderRadius:12, background:'rgba(255,255,255,.025)', border:'0.5px solid rgba(255,255,255,.06)', transition:'all 180ms', height:'100%' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,.045)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,.1)' }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,.025)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,.06)' }}>
                     <div style={{ fontSize:26, marginBottom:12 }}>{f.icon}</div>
@@ -224,7 +227,7 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
         <section style={{ padding:'0 5vw 70px', maxWidth:1120, margin:'0 auto' }}>
           <Reveal>
             <div style={{ textAlign:'center', marginBottom:36 }}>
-              <div style={{ fontSize:10, fontWeight:700, letterSpacing:'2px', color:'#3d5060', marginBottom:14, textTransform:'uppercase' as const }}>
+              <div style={{ fontSize:10, fontWeight:700, letterSpacing:'2px', color:'#3d5060', marginBottom:12, textTransform:'uppercase' as const }}>
                 {lang==='fr' ? 'Modules disponibles' : 'Available modules'}
               </div>
               <h2 style={{ fontSize:'clamp(26px,3.5vw,40px)', fontWeight:800, color:'#f0f4f8', letterSpacing:'-1px', margin:0 }}>
@@ -241,7 +244,7 @@ function DashboardHome({ onEnter, lang, onLangChange }: { onEnter:(tab:TabId)=>v
 
         {/* ── 4. CTA ── */}
         <Reveal>
-          <section style={{ padding:'40px 5vw 60px', textAlign:'center' }}>
+          <section style={{ padding:'20px 5vw 60px', textAlign:'center' }}>
             <div style={{ maxWidth:540, margin:'0 auto', padding:'40px', borderRadius:20, background:'rgba(240,180,41,.05)', border:'1px solid rgba(240,180,41,.18)', position:'relative', overflow:'hidden' }}>
               <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'linear-gradient(90deg, transparent, rgba(240,180,41,.5), transparent)' }}/>
               <div style={{ fontSize:26, marginBottom:12 }}>🚀</div>
@@ -302,9 +305,7 @@ export default function TerminalPage() {
   const [entered, setEntered] = useState(false)
   const [lang, setLang]       = useState<Lang>('fr')
   const setActiveTab          = useTerminalStore(s => s.setActiveTab)
-
   const handleEnter = (tab: TabId) => { setActiveTab(tab); setEntered(true) }
-
   if (!entered) return <DashboardHome onEnter={handleEnter} lang={lang} onLangChange={setLang} />
   return <TerminalLayout />
 }

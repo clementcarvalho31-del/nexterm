@@ -273,6 +273,7 @@ export const WORKSPACE_TABS: Tab[] = [
   { id: 'yields',      label: 'YIELDS' },
   { id: 'flows',       label: 'FLOWS' },
   { id: 'copilot',     label: 'AI COPILOT' },
+  { id: 'trackrecord', label: 'TRACK RECORD' },
 ]
 
 export const TICKER_ITEMS = [

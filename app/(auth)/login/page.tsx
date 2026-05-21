@@ -36,7 +36,7 @@ export default function LoginPage() {
         <div style={{ textAlign:'center', marginBottom:40 }}>
           <div style={{ width:40, height:40, background:'linear-gradient(135deg,#f0b429,#d4780a)', borderRadius:10, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:800, color:'#000', boxShadow:'0 4px 20px rgba(240,180,41,.3)', marginBottom:16 }}>N</div>
           <h1 style={{ fontSize:26, fontWeight:800, letterSpacing:'-0.8px', color:'#f0f4f8', marginBottom:6 }}>Welcome back</h1>
-          <p style={{ fontSize:14, color:'#5a7080' }}>Sign in to your PrimeMarket account</p>
+          <p style={{ fontSize:14, color:'#5a7080' }}>Sign in to your Nexterm account</p>
         </div>
 
         {/* Card */}

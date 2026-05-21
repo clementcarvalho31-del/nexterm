@@ -12,6 +12,7 @@ import { YieldsPanel }      from '@/modules/yields/YieldsPanel'
 import { FlowsPanel }       from '@/modules/flows/FlowsPanel'
 import { CopilotPanel }     from '@/modules/copilot/CopilotPanel'
 import { LiveFeedPanel }    from '@/modules/livefeed/LiveFeedPanel'
+import { TrackRecordPanel } from '@/modules/trackrecord/TrackRecordPanel'
 import type { TabId } from '@/types'
 
 const PANELS: Record<TabId, React.ComponentType> = {
@@ -26,7 +27,7 @@ const PANELS: Record<TabId, React.ComponentType> = {
   flows:       FlowsPanel,
   copilot:     CopilotPanel,
   livefeed:    LiveFeedPanel,
-  trackrecord: LiveFeedPanel,
+  trackrecord: TrackRecordPanel,
 }
 
 export function Workspace() {

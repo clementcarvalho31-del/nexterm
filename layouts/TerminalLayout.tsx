@@ -11,6 +11,7 @@ import { RightSidebar }      from '@/modules/news/RightSidebar'
 import { CalendarPanel }     from '@/modules/calendar/CalendarPanel'
 import { SentimentPanel }    from '@/modules/sentiment/SentimentPanel'
 import { LiveFeedPanel }     from '@/modules/livefeed/LiveFeedPanel'
+import { TrackRecordPanel }  from '@/modules/trackrecord/TrackRecordPanel'
 import { useTerminalStore }  from '@/store/terminal'
 
 const FULLSCREEN_STYLE = {
@@ -38,6 +39,15 @@ function TerminalInner() {
       <div style={FULLSCREEN_STYLE}>
         <TopBar />
         <div style={{ flex:1, minHeight:0, overflow:'hidden' }}><SentimentPanel /></div>
+      </div>
+    )
+  }
+
+  if (activeTab === 'trackrecord') {
+    return (
+      <div style={FULLSCREEN_STYLE}>
+        <TopBar />
+        <div style={{ flex:1, minHeight:0, overflow:'hidden' }}><TrackRecordPanel /></div>
       </div>
     )
   }
